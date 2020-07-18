@@ -36,3 +36,7 @@ void setup() {
 void loop() {
   device.update();
 }
+
+// Example API usage:
+// nc -v <ip_printed_by_esp8266> 8123
+// {"messageType":"handshake", "data": {"password": "123456"}}{"messageType":"readAllProperties"}{"messageType":"subscribeEverything"}{"messageType":"requestAction", "data": {"name": "heatUp"}}{"messageType":"keepalive"}
