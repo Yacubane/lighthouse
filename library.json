@@ -1,0 +1,29 @@
+{
+    "name": "Lighthouse",
+    "description": "Lighthouse is a IoT library for ESP8266 and ESP32",
+    "keywords": "wifi, websocket, iot",
+    "authors": [
+        {
+            "name": "Jakub Dybczak",
+            "url": "https://github.com/jakubdybczak",
+            "maintainer": true
+        }
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/jakubdybczak/lighthouse.git"
+    },
+    "version": "1.0.0",
+    "license": "Unknown",
+    "dependencies": {
+        "ArduinoJson": "https://github.com/bblanchon/ArduinoJson.git#v6.15.2",
+        "WebSockets": "https://github.com/Links2004/arduinoWebSockets.git#2.3.1"
+    },
+    "export": {
+        "exclude": [
+            "tests"
+        ]
+    },
+    "frameworks": "arduino",
+    "platforms": "espressif8266"
+}
