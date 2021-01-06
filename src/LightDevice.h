@@ -6,6 +6,9 @@
 #include "LightProperty.h"
 #include "LightAction.h"
 #include "LightClient.h"
+#include <WebSocketsServer.h>
+
+#define MAX_CLIENTS 5
 
 struct PropertyNode {
     Property* property;
@@ -34,20 +37,26 @@ public:
         this->devicePassword = password;
     }
 
+    void interpretMessage(HClient& client, String message);
+    void interpretMessage(HClient& client, DynamicJsonDocument& json);
+
 private:
     String name;
     int port;
     PropertyNode* propertyList;
     ActionNode* actionList;
-    WiFiServer* server;
-    HClient clients[4];
+    WebSocketsServer* webSocket;
+    HClient clients[5] = {{0}, {1}, {2}, {3}, {4}};
+    String fragmentBuffer[5];
     String devicePassword = "";
 
 
-    void sendSimpleMessage(HClient client, String type);
-    int getFirstFreeClientIndex();
-    bool isMessageProper(DynamicJsonDocument json);
+    void sendSimpleMessage(HClient& client, String type);
+    bool isFreeSpaceForNewClient();
+    bool isMessageProper(DynamicJsonDocument& json);
     Action* findActionWithName(String name);
-    void broadcastMessage(String text);
+    void broadcastText(String text);
+    void sendText(HClient& client, String text);
     DynamicJsonDocument prepareMessage(int capacity, String type);
+    void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length);
 };

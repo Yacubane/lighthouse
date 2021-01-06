@@ -6,67 +6,72 @@
 #define READ_TIMEOUT 50
 #define JSON_CAPACITY 2048
 
-class HClient {
+class HClient
+{
 public:
-    HClient() { 
-        this->active = false; 
+    HClient(int id)
+    {
+        this->id = id;
+        this->connected = false;
     }
 
-    void setClient(WiFiClient client);
-
-    void disconnect();
-
-    bool isConnected() { 
-        return this->active && this->wifiClient.connected(); 
+    void setConnected()
+    {
+        this->keepalive();
+        this->authenticated = false;
+        this->connected = true;
+        this->subscribedToEverything = false;
     }
 
-    DynamicJsonDocument receiveJsonObject();
-
-    void sendString(String message) { 
-        this->wifiClient.print(message); 
+    void setDisconnected()
+    {
+        this->connected = false;
     }
 
-    bool hasPendingMessage() { 
-        return this->wifiClient.available(); 
+    bool isConnected()
+    {
+        return this->connected;
     }
 
-    bool hasSubscribedToEverything() { 
-        return subscribedToEverything; 
+    bool hasSubscribedToEverything()
+    {
+        return subscribedToEverything;
     }
 
-    bool isAuthenticated() { 
-        return this->authenticated; 
+    void setHasSubscribedToEverything(bool subscribedToEverything)
+    {
+        this->subscribedToEverything = subscribedToEverything;
     }
 
-    void setAuthenticated(bool authenticated) { 
-        this->authenticated = authenticated; 
+    int getId()
+    {
+        return id;
     }
 
-    void setHasSubscribedToEverything(bool subscribedToEverything) { 
-        this->subscribedToEverything = subscribedToEverything; 
+    bool isAuthenticated()
+    {
+        return this->authenticated;
     }
 
-    void keepalive() { 
-        this->lastKeepalive = millis(); 
+    void setAuthenticated(bool authenticated)
+    {
+        this->authenticated = authenticated;
     }
 
-    bool isKeepaliveTimeout() { 
-        return millis() - lastKeepalive > 15000; 
+    void keepalive()
+    {
+        this->lastKeepalive = millis();
     }
 
-    bool hasError() { 
-        return error; 
+    bool isKeepaliveTimeout()
+    {
+        return millis() - lastKeepalive > 15000;
     }
 
 private:
-    WiFiClient wifiClient;
-    bool active;
-    bool error;
-    bool authenticated;
+    bool connected;
     bool subscribedToEverything;
+    int id;
+    bool authenticated;
     unsigned long lastKeepalive;
-
-    String setError();
-    int timedRead();
-    String receiveJsonObjectString();
 };
