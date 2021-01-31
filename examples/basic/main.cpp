@@ -3,40 +3,54 @@
 #include "Lighthouse.h"
 
 // Change these values
-#define WIFI_SSID "..."
+#define WIFI_SSID "TV_ROOM_2.4G"
 #define WIFI_PASSWORD "..."
 
-Device device("home-device");
-FloatProperty temperature("temperature");
+Device thing("home-device");
+BooleanProperty lightProperty("garden-lights");
+StringProperty garageDoorsProperty("garage-doors");
 
-void heatUpHandler() {
-  device.broadcastEvent("heatingUp");
-  temperature.setValue(temperature.getValue() + 1.0);
+void toggleGarageDoorsHandler(ActionStatus *actionStatus, JsonObject data)
+{
+  garageDoorsProperty.setValue(garageDoorsProperty.getValue().equals("OPEN") ? "CLOSE" : "OPEN");
+  actionStatus->set(ActionStatus::COMPLETED, "COMPLETED", "Action completed successfully");
 }
 
-void coolDownHandler() {
-  device.broadcastEvent("coolingDown");
-  temperature.setValue(temperature.getValue() - 1.0);
+void toggleLightHandler(ActionStatus *actionStatus, JsonObject data)
+{
+  lightProperty.setValue(lightProperty.getValue() ? false : true);
+  actionStatus->set(ActionStatus::COMPLETED, "COMPLETED", "Action completed successfully");
 }
 
-void setup() {
+void setup()
+{
   Serial.begin(9600);
 
-  device.setup(WIFI_SSID, WIFI_PASSWORD, 8123);
-  device.setPassword("123456");
-  device.addProperty(temperature);
-  device.addAction("heatUp", heatUpHandler);
-  device.addAction("coolDown", coolDownHandler);
+  thing.setup(WIFI_SSID, WIFI_PASSWORD, 8123);
+  thing.setPassword("123456");
 
-  temperature.setValue(22);
+  Service *garageDoorsService = new Service("gate", {"ToggleButton", "GarageDoors"}, "Garage doors service");
+  garageDoorsService->addProperty(garageDoorsProperty);
+  garageDoorsService->addAction("toggle", {"Toggle"}, "Toggle garage doors action", toggleGarageDoorsHandler);
+  thing.addService(garageDoorsService);
 
-  device.start();
+  Service *lightService = new Service("light", {"ToggleButton", "Light"}, "Light service");
+  lightService->addProperty(lightProperty);
+  lightService->addAction("toggle", {"Toggle"}, "Toggle light action", toggleLightHandler);
+  thing.addService(lightService);
+
+  lightProperty.setValue(false);
+  garageDoorsProperty.setValue("OPEN");
+
+  thing.start();
 }
 
-void loop() {
-  device.update();
+void loop()
+{
+  thing.update();
+  delay(10);
 }
 
 // Example API usage:
 // nc -v <ip_printed_by_esp8266> 8123
-// {"messageType":"handshake", "data": {"password": "123456"}}{"messageType":"readAllProperties"}{"messageType":"subscribeEverything"}{"messageType":"requestAction", "data": {"name": "heatUp"}}{"messageType":"keepalive"}
+// { "messageType": "authenticate", "data": {"password": "123456"}} { "messageType": "ping" } { "messageType": "serviceInteraction", "data": { "serviceId" : "gate", "data": { "messageType": "readAllProperties"}}} { "messageType": "serviceInteraction", "data": { "serviceId" : "gate", "data": { "messageType": "requestAction", "data": { "name": "toggle", "data": { "requestId": "req"}}}}} { "messageType": "keepalive" }

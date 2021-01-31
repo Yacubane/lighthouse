@@ -7,3 +7,4 @@
 #include "LightAction.h"
 #include "LightClient.h"
 #include "LightDevice.h"
+#include "LightService.h"

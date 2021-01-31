@@ -6,18 +6,17 @@
 #include "LightProperty.h"
 #include "LightAction.h"
 #include "LightClient.h"
+#include "LightService.h"
+#include "LightSender.h"
 #include <WebSocketsServer.h>
 
 #define MAX_CLIENTS 5
 
-struct PropertyNode {
-    Property* property;
-    PropertyNode* next;
-};
+class Service;
 
-struct ActionNode {
-    Action* action;
-    ActionNode* next;
+struct ServiceNode {
+    Service* service;
+    ServiceNode* next;
 };
 
 class Device {
@@ -28,10 +27,7 @@ public:
     void update();
     void start();
 
-    void addProperty(Property& property);
-    void addAction(String name, void (*handler)());
-
-    void broadcastEvent(String name);
+    void addService(Service* service);
 
     void setPassword(String password) {
         this->devicePassword = password;
@@ -43,12 +39,13 @@ public:
 private:
     String name;
     int port;
-    PropertyNode* propertyList;
-    ActionNode* actionList;
+    unsigned long clientsCounter;
+    ServiceNode* serviceList;
     WebSocketsServer* webSocket;
     HClient clients[5] = {{0}, {1}, {2}, {3}, {4}};
     String fragmentBuffer[5];
     String devicePassword = "";
+    Sender* sender;
 
 
     void sendSimpleMessage(HClient& client, String type);
@@ -56,7 +53,7 @@ private:
     bool isMessageProper(DynamicJsonDocument& json);
     Action* findActionWithName(String name);
     void broadcastText(String text);
-    void sendText(HClient& client, String text);
     DynamicJsonDocument prepareMessage(int capacity, String type);
     void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length);
+    Service* findServiceWithId(String id);
 };

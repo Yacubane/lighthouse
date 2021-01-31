@@ -9,9 +9,9 @@
 class HClient
 {
 public:
-    HClient(int id)
+    HClient(int socketId)
     {
-        this->id = id;
+        this->socketId = socketId;
         this->connected = false;
     }
 
@@ -20,7 +20,6 @@ public:
         this->keepalive();
         this->authenticated = false;
         this->connected = true;
-        this->subscribedToEverything = false;
     }
 
     void setDisconnected()
@@ -33,19 +32,18 @@ public:
         return this->connected;
     }
 
-    bool hasSubscribedToEverything()
-    {
-        return subscribedToEverything;
+    void setId(String id) {
+        this->id = id;
     }
 
-    void setHasSubscribedToEverything(bool subscribedToEverything)
-    {
-        this->subscribedToEverything = subscribedToEverything;
-    }
-
-    int getId()
+    String getId()
     {
         return id;
+    }
+
+    int getSocketId()
+    {
+        return socketId;
     }
 
     bool isAuthenticated()
@@ -70,8 +68,8 @@ public:
 
 private:
     bool connected;
-    bool subscribedToEverything;
-    int id;
+    String id;
+    unsigned int socketId;
     bool authenticated;
     unsigned long lastKeepalive;
 };

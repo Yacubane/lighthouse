@@ -3,14 +3,11 @@
 Device::Device(String name)
 {
     this->name = name;
+    this->clientsCounter = 0;
 
-    this->propertyList = new PropertyNode();
-    this->propertyList->property = nullptr;
-    this->propertyList->next = nullptr;
-
-    this->actionList = new ActionNode();
-    this->actionList->action = nullptr;
-    this->actionList->next = nullptr;
+    this->serviceList = new ServiceNode();
+    this->serviceList->service = nullptr;
+    this->serviceList->next = nullptr;
 }
 
 DynamicJsonDocument Device::prepareMessage(int capacity, String type)
@@ -35,12 +32,13 @@ void Device::webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t
         if (!this->isFreeSpaceForNewClient())
         {
             clients[num].setConnected();
-            this->sendText(clients[num], "{ \"messageType\": \"noSpace\" }");
+            this->sender->send("{ \"messageType\": \"noSpace\" }", clients[num]);
             this->webSocket->disconnect(num);
             clients[num].setDisconnected();
         }
         else
         {
+            clients[num].setId(String(clientsCounter++));
             clients[num].setConnected();
         }
     }
@@ -71,7 +69,7 @@ void Device::webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t
 
 void Device::interpretMessage(HClient &client, String message)
 {
-    Serial.printf("Interpreting message from client with ID: %d\n", client.getId());
+    Serial.printf("Interpreting message from client with ID: %d\n", client.getSocketId());
 
     String restMessage = message;
     String jsonMessage = "";
@@ -159,10 +157,11 @@ void Device::interpretMessage(HClient &client, DynamicJsonDocument &json)
     {
         //TODO
     }
-    else if (messageType.equals("requestAction"))
+    else if (messageType.equals("serviceInteraction"))
     {
         if (!client.isAuthenticated())
         {
+            sendSimpleMessage(client, "authenticationRequired");
             return;
         }
         if (!json.containsKey("data"))
@@ -170,49 +169,19 @@ void Device::interpretMessage(HClient &client, DynamicJsonDocument &json)
             return;
         }
         JsonObject data = json["data"];
-        if (!data.containsKey("name"))
+        if (!data.containsKey("serviceId"))
         {
             return;
         }
-        String actionName = data["name"];
-        Action *action = findActionWithName(actionName);
-        if (action == nullptr)
+        if (!data.containsKey("data"))
         {
             return;
         }
-        if (!action->areArgumentsValid(data))
-        {
-            return;
-        }
-
-        action->invokeAction(data);
-    }
-    else if (messageType.equals("subscribeEverything"))
-    {
-        if (!client.isAuthenticated())
-        {
-            return;
-        }
-        client.setHasSubscribedToEverything(true);
-    }
-    else if (messageType.equals("readAllProperties"))
-    {
-        if (!client.isAuthenticated())
-        {
-            return;
-        }
-        PropertyNode *propertyNode = this->propertyList;
-        while (propertyNode->next != nullptr)
-        {
-            {
-                DynamicJsonDocument doc = this->prepareMessage(200, "propertyStatus");
-                JsonObject data = doc.createNestedObject("data");
-                propertyNode->property->addToJson(data);
-                String output;
-                serializeJson(doc, output);
-                this->sendText(client, output);
-            }
-            propertyNode = propertyNode->next;
+        String serviceId = data["serviceId"];
+        JsonObject messageToService = data["data"];
+        Service* service = findServiceWithId(serviceId);
+        if (service != nullptr) {
+            service->interpretMessage(client, sender, messageToService);
         }
     }
 }
@@ -222,6 +191,7 @@ void Device::setup(String ssid, String password, int port)
     WiFi.mode(WIFI_STA);
     WiFi.disconnect(true);
     WiFi.begin(ssid, password);
+    Serial.println();
     Serial.println("Connecting to WiFi...");
     while (WiFi.status() != WL_CONNECTED)
     {
@@ -247,59 +217,40 @@ void Device::start()
     };
     this->webSocket->onEvent(eventFunction);
 
-    this->webSocket->enableHeartbeat(10000, 5000, 1);
+    this->sender = new Sender(this->webSocket, clients);
 }
 
-void Device::addProperty(Property &property)
-{
-    PropertyNode *newNode = new PropertyNode();
-    newNode->property = &property;
-    newNode->next = this->propertyList;
-    this->propertyList = newNode;
-}
 
-void Device::addAction(String name, void (*handler)())
+Service *Device::findServiceWithId(String id)
 {
-    ActionNode *newNode = new ActionNode();
-    Action *action = new Action(name);
-    action->setSimpleHandler(handler);
-    newNode->action = action;
-    newNode->next = this->actionList;
-    this->actionList = newNode;
-}
-
-void Device::broadcastText(String text)
-{
-    for (int i = 0; i < MAX_CLIENTS; i++)
+    ServiceNode *serviceNode = this->serviceList;
+    while (serviceNode->next != nullptr)
     {
-        if (this->clients[i].isConnected() && this->clients[i].hasSubscribedToEverything())
+        if (serviceNode->service->getId().equals(id))
         {
-            this->sendText(this->clients[i], text);
+            return serviceNode->service;
         }
+        serviceNode = serviceNode->next;
     }
+    return nullptr;
 }
 
-void Device::sendText(HClient &client, String text)
+void Device::addService(Service *service)
 {
-    this->webSocket->sendTXT(client.getId(), text);
+    service->setDevice(this);
+    ServiceNode *newNode = new ServiceNode();
+    newNode->service = service;
+    newNode->next = this->serviceList;
+    this->serviceList = newNode;
 }
 
-void Device::broadcastEvent(String name)
-{
-    DynamicJsonDocument doc = this->prepareMessage(200, "event");
-    JsonObject data = doc.createNestedObject("data");
-    data["name"] = name;
-    String output;
-    serializeJson(doc, output);
-    broadcastText(output);
-}
 
 void Device::sendSimpleMessage(HClient &client, String type)
 {
     DynamicJsonDocument doc = this->prepareMessage(200, type);
     String output;
     serializeJson(doc, output);
-    this->sendText(client, output);
+    this->sender->send(output, client);
 }
 
 bool Device::isFreeSpaceForNewClient()
@@ -322,43 +273,14 @@ bool Device::isMessageProper(DynamicJsonDocument &json)
     return json.containsKey("messageType");
 }
 
-Action *Device::findActionWithName(String name)
-{
-    ActionNode *actionNode = this->actionList;
-    while (actionNode->next != nullptr)
-    {
-        if (actionNode->action->getName().equals(name))
-        {
-            return actionNode->action;
-        }
-        actionNode = actionNode->next;
-    }
-    return nullptr;
-}
-
 void Device::update()
 {
     this->webSocket->loop();
-    PropertyNode *propertyNode = this->propertyList;
-    while (propertyNode->next != nullptr)
+    ServiceNode *serviceNode = this->serviceList;
+    while (serviceNode->next != nullptr)
     {
-        if (propertyNode->property->isChanged())
-        {
-            propertyNode->property->setChanged(false);
-            DynamicJsonDocument doc = this->prepareMessage(200, "propertyChanged");
-            JsonObject data = doc.createNestedObject("data");
-            propertyNode->property->addToJson(data);
-            String output;
-            serializeJson(doc, output);
-            for (int i = 0; i < MAX_CLIENTS; i++)
-            {
-                if (this->clients[i].isConnected() && this->clients[i].hasSubscribedToEverything())
-                {
-                    this->sendText(this->clients[i], output);
-                }
-            }
-        }
-        propertyNode = propertyNode->next;
+        serviceNode->service->update(sender);
+        serviceNode = serviceNode->next;
     }
 
     for (int i = 0; i < MAX_CLIENTS; i++)
@@ -368,7 +290,7 @@ void Device::update()
             if (this->clients[i].isKeepaliveTimeout())
             {
                 sendSimpleMessage(this->clients[i], "keepaliveTimeout");
-                this->webSocket->disconnect(this->clients[i].getId());
+                this->webSocket->disconnect(this->clients[i].getSocketId());
             }
         }
     }
