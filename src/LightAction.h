@@ -4,6 +4,7 @@
 #include "LightProperty.h"
 #include "LightActionStatus.h"
 #include "LightClient.h"
+#include "LightDefines.h"
 
 struct ActionStatusNode
 {
@@ -14,10 +15,10 @@ struct ActionStatusNode
 class Action
 {
 public:
-    Action(String id, std::vector<const char*> types, String description)
+    Action(const char *id, std::vector<const char *> semanticTypes, const char *description)
     {
         this->id = id;
-        this->types = types;
+        this->semanticTypes = semanticTypes;
         this->description = description;
         this->counter = 0;
 
@@ -26,9 +27,14 @@ public:
         this->actionStatusList->next = nullptr;
     }
 
-    String getId()
+    const char *getId()
     {
         return this->id;
+    }
+
+    const char *getDescription()
+    {
+        return this->description;
     }
 
     void setHandler(void (*handler)(ActionStatus *actionStatus, JsonObject data))
@@ -36,7 +42,8 @@ public:
         this->handler = handler;
     }
 
-    void (*getHandler(void))(ActionStatus *actionStatus, JsonObject data) {
+    void (*getHandler(void))(ActionStatus *actionStatus, JsonObject data)
+    {
         return this->handler;
     }
 
@@ -45,7 +52,7 @@ public:
         return true;
     }
 
-    ActionStatus* invokeAction(HClient& client, JsonObject data)
+    ActionStatus *invokeAction(HClient &client, JsonObject data)
     {
         ActionStatus *actionStatus = new ActionStatus(String(counter++), getId(), data["requestId"], client.getId(), ActionStatus::PENDING, "PENDING", "Starting action");
         actionStatus->setChanged(true);
@@ -57,16 +64,21 @@ public:
         return actionStatus;
     }
 
-    ActionStatusNode* getActionStatusList() {
+    ActionStatusNode *getActionStatusList()
+    {
         return actionStatusList;
     }
 
+    std::vector<const char *> getSemanticTypes()
+    {
+        return this->semanticTypes;
+    }
 
 private:
-    String id;
-    String description;
+    const char *id;
+    const char *description;
     ActionStatusNode *actionStatusList;
-    std::vector<const char*> types;
+    std::vector<const char *> semanticTypes;
     unsigned long counter;
     void (*handler)(ActionStatus *actionStatus, JsonObject data);
 };

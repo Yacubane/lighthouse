@@ -16,6 +16,50 @@ Service::Service(String id, std::vector<const char *> types, String description)
     this->actionList->next = nullptr;
 }
 
+void Service::createJSONDescription(JsonObject jsonObject)
+{
+    jsonObject["id"] = this->id;
+    jsonObject["description"] = this->description;
+    JsonArray types = jsonObject.createNestedArray("@type");
+    for (auto type : this->types)
+    {
+        types.add(type);
+    }
+
+    JsonObject properties = jsonObject.createNestedObject("properties");
+
+    PropertyNode *propertyNode = this->propertyList;
+    while (propertyNode->next != nullptr)
+    {
+        JsonObject property = properties.createNestedObject(propertyNode->property->getName());
+        property["id"] = propertyNode->property->getName();
+        property["description"] = propertyNode->property->getDescription();
+        JsonArray semanticTypesArray = property.createNestedArray("@type");
+        for (auto semanticType : propertyNode->property->getSemanticTypes())
+        {
+            semanticTypesArray.add(semanticType);
+        }
+        property["type"] = propertyNode->property->getType();
+        propertyNode = propertyNode->next;
+    }
+
+    JsonObject actions = jsonObject.createNestedObject("actions");
+
+    ActionNode *actionNode = this->actionList;
+    while (actionNode->next != nullptr)
+    {
+        JsonObject action = actions.createNestedObject(actionNode->action->getId());
+        action["id"] = actionNode->action->getId();
+        action["description"] = actionNode->action->getDescription();
+        JsonArray semanticTypesArray = action.createNestedArray("@type");
+        for (auto semanticType : actionNode->action->getSemanticTypes())
+        {
+            semanticTypesArray.add(semanticType);
+        }
+        actionNode = actionNode->next;
+    }
+}
+
 DynamicJsonDocument Service::prepareMessage(int capacity, String type)
 {
     DynamicJsonDocument doc(capacity);
@@ -55,7 +99,7 @@ void Service::interpretMessage(HClient &client, Sender *sender, JsonObject &json
         }
 
         JsonObject actionParameters = data["data"];
-        ActionStatus* actionStatus = action->invokeAction(client, actionParameters );
+        ActionStatus *actionStatus = action->invokeAction(client, actionParameters);
         update(sender);
         action->getHandler()(actionStatus, data);
     }
@@ -65,7 +109,7 @@ void Service::interpretMessage(HClient &client, Sender *sender, JsonObject &json
         while (propertyNode->next != nullptr)
         {
             {
-                DynamicJsonDocument doc = this->prepareMessage(1000, "propertyStatus");
+                DynamicJsonDocument doc = this->prepareMessage(PROPERTY_STATUS_JSON_SIZE, "propertyStatus");
                 JsonObject data = doc["data"]["data"];
                 propertyNode->property->addToJson(data);
                 String output;
@@ -85,7 +129,7 @@ void Service::addProperty(Property &property)
     this->propertyList = newNode;
 }
 
-void Service::addAction(String id, std::vector<const char *> types, String description, void (*handler)(ActionStatus *actionStatus, JsonObject jsonObject))
+void Service::addAction(const char * id, std::vector<const char *> types, const char * description, void (*handler)(ActionStatus *actionStatus, JsonObject jsonObject))
 {
     ActionNode *newNode = new ActionNode();
     Action *action = new Action(id, types, description);
@@ -100,7 +144,7 @@ Action *Service::findActionWithId(String id)
     ActionNode *actionNode = this->actionList;
     while (actionNode->next != nullptr)
     {
-        if (actionNode->action->getId().equals(id))
+        if (id.equals(actionNode->action->getId()))
         {
             return actionNode->action;
         }
@@ -118,7 +162,7 @@ void Service::update(Sender *sender)
         if (propertyNode->property->isChanged())
         {
             propertyNode->property->setChanged(false);
-            DynamicJsonDocument doc = this->prepareMessage(1000, "propertyStatus");
+            DynamicJsonDocument doc = this->prepareMessage(PROPERTY_STATUS_JSON_SIZE, "propertyStatus");
             JsonObject data = doc["data"]["data"].createNestedObject("value");
             propertyNode->property->addToJson(data);
             String output;
@@ -150,12 +194,12 @@ void Service::update(Sender *sender)
             if (client != nullptr && actionStatusNode->actionStatus->isChanged())
             {
                 actionStatusNode->actionStatus->setChanged(false);
-                DynamicJsonDocument doc = this->prepareMessage(1000, "actionStatus");
-                JsonObject data = doc["data"]["data"]["value"].createNestedObject("data");
+                DynamicJsonDocument doc = this->prepareMessage(ACTION_STATUS_JSON_SIZE, "actionStatus");
+                JsonObject data = doc["data"]["data"].createNestedObject("data");
                 data["id"] = actionStatusNode->actionStatus->getId();
                 data["actionId"] = actionStatusNode->actionStatus->getActionId();
                 data["requestId"] = actionStatusNode->actionStatus->getRequestId();
-                data["message"] = actionStatusNode->actionStatus->getMessage();
+                data["status"] = actionStatusNode->actionStatus->getMessage();
                 data["userMessage"] = actionStatusNode->actionStatus->getUserMessage();
                 String output;
                 serializeJson(doc, output);

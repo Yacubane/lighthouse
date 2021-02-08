@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include <WebSocketsServer.h>
 #include "LightClient.h"
+#include "LightDefines.h"
 
 #define MAX_CLIENTS 5
 

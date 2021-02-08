@@ -2,9 +2,9 @@
 #include <ESP8266WiFi.h>
 #include <ArduinoJson.h>
 #include <Arduino.h>
+#include "LightDefines.h"
 
 #define READ_TIMEOUT 50
-#define JSON_CAPACITY 2048
 
 class HClient
 {

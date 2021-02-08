@@ -2,6 +2,7 @@
 
 #include <Arduino.h>
 #include "LightProperty.h"
+#include "LightDefines.h"
 
 class ActionStatus
 {

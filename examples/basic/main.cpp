@@ -7,8 +7,8 @@
 #define WIFI_PASSWORD "..."
 
 Device thing("home-device");
-BooleanProperty lightProperty("garden-lights");
-StringProperty garageDoorsProperty("garage-doors");
+BooleanProperty lightProperty("garden-lights", {"OnOffProperty"}, "");
+StringProperty garageDoorsProperty("garage-doors", {"OpenCloseProperty"}, "");
 
 void toggleGarageDoorsHandler(ActionStatus *actionStatus, JsonObject data)
 {
@@ -52,5 +52,14 @@ void loop()
 }
 
 // Example API usage:
-// nc -v <ip_printed_by_esp8266> 8123
-// { "messageType": "authenticate", "data": {"password": "123456"}} { "messageType": "ping" } { "messageType": "serviceInteraction", "data": { "serviceId" : "gate", "data": { "messageType": "readAllProperties"}}} { "messageType": "serviceInteraction", "data": { "serviceId" : "gate", "data": { "messageType": "requestAction", "data": { "name": "toggle", "data": { "requestId": "req"}}}}} { "messageType": "keepalive" }
+/*
+var socket = new WebSocket('ws://192.168.100.21:8123');
+
+socket.addEventListener('open', function (event) {
+    socket.send('{ "messageType": "authenticate", "data": {"password": "123456"}} { "messageType": "ping" } { "messageType": "describe" } { "messageType": "serviceInteraction", "data": { "serviceId" : "gate", "data": { "messageType": "readAllProperties"}}} { "messageType": "serviceInteraction", "data": { "serviceId" : "gate", "data": { "messageType": "requestAction", "data": { "name": "toggle", "data": { "requestId": "req"}}}}} { "messageType": "keepalive" }');
+});
+
+socket.addEventListener('message', function (event) {
+    console.log('Message from server ', event.data);
+});
+*/

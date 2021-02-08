@@ -9,6 +9,7 @@
 #include "LightService.h"
 #include "LightSender.h"
 #include <WebSocketsServer.h>
+#include "LightDefines.h"
 
 #define MAX_CLIENTS 5
 
