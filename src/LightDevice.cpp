@@ -59,9 +59,6 @@ void Device::webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload,
 }
 
 void Device::interpretMessage(HClient &client, String message) {
-  Serial.printf("Interpreting message from client with ID: %d\n",
-                client.getSocketId());
-
   String restMessage = message;
   String jsonMessage = "";
 

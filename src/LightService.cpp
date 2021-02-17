@@ -31,8 +31,8 @@ void Service::createJSONDescription(JsonObject jsonObject)
     PropertyNode *propertyNode = this->propertyList;
     while (propertyNode->next != nullptr)
     {
-        JsonObject property = properties.createNestedObject(propertyNode->property->getName());
-        property["id"] = propertyNode->property->getName();
+        JsonObject property = properties.createNestedObject(propertyNode->property->getId());
+        property["id"] = propertyNode->property->getId();
         property["description"] = propertyNode->property->getDescription();
         JsonArray semanticTypesArray = property.createNestedArray("@type");
         for (auto semanticType : propertyNode->property->getSemanticTypes())
@@ -83,12 +83,12 @@ void Service::interpretMessage(HClient &client, Sender *sender, JsonObject &json
             return;
         }
         JsonObject data = json["data"];
-        if (!data.containsKey("name"))
+        if (!data.containsKey("id"))
         {
             return;
         }
-        String actionName = data["name"];
-        Action *action = findActionWithId(actionName);
+        String actionId = data["id"];
+        Action *action = findActionWithId(actionId);
         if (action == nullptr)
         {
             return;
@@ -110,7 +110,7 @@ void Service::interpretMessage(HClient &client, Sender *sender, JsonObject &json
         {
             {
                 DynamicJsonDocument doc = this->prepareMessage(PROPERTY_STATUS_JSON_SIZE, "propertyStatus");
-                JsonObject data = doc["data"]["data"];
+                JsonObject data = doc["data"]["data"].createNestedObject("data");
                 propertyNode->property->addToJson(data);
                 String output;
                 serializeJson(doc, output);
@@ -163,7 +163,7 @@ void Service::update(Sender *sender)
         {
             propertyNode->property->setChanged(false);
             DynamicJsonDocument doc = this->prepareMessage(PROPERTY_STATUS_JSON_SIZE, "propertyStatus");
-            JsonObject data = doc["data"]["data"].createNestedObject("value");
+            JsonObject data = doc["data"]["data"].createNestedObject("data");
             propertyNode->property->addToJson(data);
             String output;
             serializeJson(doc, output);

@@ -7,48 +7,74 @@
 #define WIFI_PASSWORD "..."
 
 Device thing("home-device");
-BooleanProperty lightProperty("garden-lights", {"OnOffProperty"}, "");
-StringProperty garageDoorsProperty("garage-doors", {"OpenCloseProperty"}, "");
 
-void toggleGarageDoorsHandler(ActionStatus *actionStatus, JsonObject data)
+Service gateWicketService("wicket-gate", {"Button", "WicketGate"}, "Gate opener/closer");
+
+Service gateService("gate", {"ToggleButton", "Gate"}, "Gate opener/closer");
+StringProperty gateProperty("gate", {"OpenProperty"}, "");
+
+Service lightService("outside-lights", {"ToggleButton", "Light"}, "Light service");
+BooleanProperty lightProperty("outside-lights", {"OnOffProperty"}, "");
+
+Service temperatureService("room-temperature", {"TemperatureSensor", "Sensor"}, "Temperature in room");
+NumberProperty temperatureProperty("room-temperature", {"NumberProperty"}, "");
+
+Service humidityService("room-humidity", {"HumiditySensor", "Sensor"}, "Humidity in room");
+NumberProperty humidityProperty("room-humidity", {"NumberProperty"}, "");
+
+void toggleWicketGateHandler(ActionStatus *actionStatus, JsonObject data)
 {
-  garageDoorsProperty.setValue(garageDoorsProperty.getValue().equals("OPEN") ? "CLOSE" : "OPEN");
-  actionStatus->set(ActionStatus::COMPLETED, "COMPLETED", "Action completed successfully");
+    actionStatus->set(ActionStatus::COMPLETED, "COMPLETED", "Action completed successfully");
+}
+
+void toggleGateHandler(ActionStatus *actionStatus, JsonObject data)
+{
+    gateProperty.setValue(gateProperty.getValue().equals("OPEN") ? "CLOSE" : "OPEN");
+    actionStatus->set(ActionStatus::COMPLETED, "COMPLETED", "Action completed successfully");
 }
 
 void toggleLightHandler(ActionStatus *actionStatus, JsonObject data)
 {
-  lightProperty.setValue(lightProperty.getValue() ? false : true);
-  actionStatus->set(ActionStatus::COMPLETED, "COMPLETED", "Action completed successfully");
+    lightProperty.setValue(lightProperty.getValue() ? false : true);
+    actionStatus->set(ActionStatus::COMPLETED, "COMPLETED", "Action completed successfully");
 }
 
 void setup()
 {
-  Serial.begin(9600);
+    Serial.begin(9600);
 
-  thing.setup(WIFI_SSID, WIFI_PASSWORD, 8123);
-  thing.setPassword("123456");
+    thing.setup(WIFI_SSID, WIFI_PASSWORD, 8123);
+    thing.setPassword("123456");
 
-  Service *garageDoorsService = new Service("gate", {"ToggleButton", "GarageDoors"}, "Garage doors service");
-  garageDoorsService->addProperty(garageDoorsProperty);
-  garageDoorsService->addAction("toggle", {"Toggle"}, "Toggle garage doors action", toggleGarageDoorsHandler);
-  thing.addService(garageDoorsService);
+    gateWicketService.addAction("toggle", {"Toggle"}, "Toggle wicket gate action", toggleWicketGateHandler);
+    thing.addService(&gateWicketService);
 
-  Service *lightService = new Service("light", {"ToggleButton", "Light"}, "Light service");
-  lightService->addProperty(lightProperty);
-  lightService->addAction("toggle", {"Toggle"}, "Toggle light action", toggleLightHandler);
-  thing.addService(lightService);
+    gateService.addProperty(gateProperty);
+    gateService.addAction("toggle", {"Toggle"}, "Toggle gate action", toggleGateHandler);
+    thing.addService(&gateService);
 
-  lightProperty.setValue(false);
-  garageDoorsProperty.setValue("OPEN");
+    lightService.addProperty(lightProperty);
+    lightService.addAction("toggle", {"Toggle"}, "Toggle light action", toggleLightHandler);
+    thing.addService(&lightService);
 
-  thing.start();
+    temperatureService.addProperty(temperatureProperty);
+    thing.addService(&temperatureService);
+
+    humidityService.addProperty(humidityProperty);
+    thing.addService(&humidityService);
+
+    lightProperty.setValue(false);
+    gateProperty.setValue("OPEN");
+    temperatureProperty.setValue(22);
+    humidityProperty.setValue(50);
+
+    thing.start();
 }
 
 void loop()
 {
-  thing.update();
-  delay(10);
+    thing.update();
+    delay(10);
 }
 
 // Example API usage:
@@ -56,7 +82,7 @@ void loop()
 var socket = new WebSocket('ws://192.168.100.21:8123');
 
 socket.addEventListener('open', function (event) {
-    socket.send('{ "messageType": "authenticate", "data": {"password": "123456"}} { "messageType": "ping" } { "messageType": "describe" } { "messageType": "serviceInteraction", "data": { "serviceId" : "gate", "data": { "messageType": "readAllProperties"}}} { "messageType": "serviceInteraction", "data": { "serviceId" : "gate", "data": { "messageType": "requestAction", "data": { "name": "toggle", "data": { "requestId": "req"}}}}} { "messageType": "keepalive" }');
+    socket.send('{ "messageType": "authenticate", "data": {"password": "123456"}} { "messageType": "ping" } { "messageType": "describe" } { "messageType": "serviceInteraction", "data": { "serviceId" : "gate", "data": { "messageType": "readAllProperties"}}} { "messageType": "serviceInteraction", "data": { "serviceId" : "gate", "data": { "messageType": "requestAction", "data": { "id": "toggle", "data": { "requestId": "req"}}}}} { "messageType": "keepalive" }');
 });
 
 socket.addEventListener('message', function (event) {
