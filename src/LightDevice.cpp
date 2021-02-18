@@ -1,12 +1,16 @@
 #include "LightDevice.h"
 
-Device::Device(String name) {
+Device::Device(char* name, int port) {
   this->name = name;
+  this->port = port;
   this->clientsCounter = 0;
 
   this->serviceList = new ServiceNode();
   this->serviceList->service = nullptr;
   this->serviceList->next = nullptr;
+
+  this->isOTAEnabled = false;
+  this->isWifiSetupEnabled = false;
 }
 
 DynamicJsonDocument Device::prepareMessage(int capacity, String type) {
@@ -165,7 +169,26 @@ void Device::interpretMessage(HClient &client, DynamicJsonDocument &json) {
   }
 }
 
-void Device::setup(String ssid, String password, int port) {
+void Device::ensureHasWifi() 
+{                
+  if (WiFi.status() != WL_CONNECTED) 
+  {            
+    WiFi.disconnect();
+    int counter = 0;
+    while (WiFi.status() != WL_CONNECTED) 
+    {      
+      if (counter >= 5) 
+      {
+        ESP.restart();
+      }
+      WiFi.begin(this->wifiSsid, this->wifiPassword);
+      delay(15000);
+      counter++;
+    }     
+  }                                           
+}   
+
+void Device::setWiFi(String ssid, String password) {
   WiFi.mode(WIFI_STA);
   WiFi.disconnect(true);
   WiFi.begin(ssid, password);
@@ -178,10 +201,18 @@ void Device::setup(String ssid, String password, int port) {
   Serial.println("");
   WiFi.setAutoReconnect(true);
   Serial.print("IP address:\t");
-  Serial.print(WiFi.localIP());
-  Serial.print("\tPort:\t");
-  Serial.println(port);
+  Serial.println(WiFi.localIP());
+  this->wifiSsid = ssid;
+  this->wifiPassword = password;
   this->port = port;
+  this->isWifiSetupEnabled = true;
+}
+
+void Device::setOTA(const char* password) {
+  ArduinoOTA.setHostname(this->name);
+  ArduinoOTA.setPassword(password);
+  ArduinoOTA.begin();
+  this->isOTAEnabled = true;
 }
 
 void Device::start() {
@@ -240,6 +271,14 @@ bool Device::isMessageProper(DynamicJsonDocument &json) {
 }
 
 void Device::update() {
+  if (this->isOTAEnabled) {
+    ArduinoOTA.handle();
+  }
+
+  if (this->isWifiSetupEnabled) {
+    this->ensureHasWifi();
+  }
+
   this->webSocket->loop();
   ServiceNode *serviceNode = this->serviceList;
   while (serviceNode->next != nullptr) {

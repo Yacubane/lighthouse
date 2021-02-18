@@ -6,7 +6,7 @@
 #define WIFI_SSID "TV_ROOM_2.4G"
 #define WIFI_PASSWORD "..."
 
-Device thing("home-device");
+Device thing("home-device", 8123);
 
 Service gateWicketService("wicket-gate", {"Button", "WicketGate"}, "Gate opener/closer");
 
@@ -43,7 +43,8 @@ void setup()
 {
     Serial.begin(9600);
 
-    thing.setup(WIFI_SSID, WIFI_PASSWORD, 8123);
+    thing.setWiFi(WIFI_SSID, WIFI_PASSWORD);
+    thing.setOTA("123456");
     thing.setPassword("123456");
 
     gateWicketService.addAction("toggle", {"Toggle"}, "Toggle wicket gate action", toggleWicketGateHandler);

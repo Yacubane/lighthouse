@@ -1,6 +1,8 @@
 #pragma once
 
 #include <Arduino.h>
+#include <ESP8266mDNS.h>
+#include <ArduinoOTA.h>
 #include <ESP8266WiFi.h>
 #include <ArduinoJson.h>
 #include "LightProperty.h"
@@ -22,9 +24,10 @@ struct ServiceNode {
 
 class Device {
 public:
-    Device(String name);
+    Device(char* name, int port);
 
-    void setup(String ssid, String password, int port);
+    void setWiFi(String ssid, String password);
+    void setOTA(const char* password);
     void update();
     void start();
 
@@ -38,7 +41,7 @@ public:
     void interpretMessage(HClient& client, DynamicJsonDocument& json);
 
 private:
-    String name;
+    char* name;
     int port;
     unsigned long clientsCounter;
     ServiceNode* serviceList;
@@ -47,6 +50,12 @@ private:
     String fragmentBuffer[5];
     String devicePassword = "";
     Sender* sender;
+
+    String wifiSsid;
+    String wifiPassword;
+    bool isOTAEnabled;
+    bool isWifiSetupEnabled;
+
 
 
     void sendSimpleMessage(HClient& client, String type);
@@ -57,4 +66,5 @@ private:
     DynamicJsonDocument prepareMessage(int capacity, String type);
     void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length);
     Service* findServiceWithId(String id);
+    void ensureHasWifi();
 };
