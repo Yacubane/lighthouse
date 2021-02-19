@@ -99,7 +99,7 @@ void Service::interpretMessage(HClient &client, Sender *sender, JsonObject &json
         }
 
         JsonVariant actionParameters = data["data"];
-        ActionStatus *actionStatus = action->invokeAction(client, actionParameters);
+        ActionStatus *actionStatus = action->invokeAction(client, data["requestId"], actionParameters);
         update(sender);
         action->getHandler()(actionStatus, actionParameters);
     }

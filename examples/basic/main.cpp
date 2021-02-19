@@ -83,7 +83,7 @@ void loop()
 var socket = new WebSocket('ws://192.168.100.21:8123');
 
 socket.addEventListener('open', function (event) {
-    socket.send('{ "messageType": "authenticate", "data": {"password": "123456"}} { "messageType": "ping" } { "messageType": "describe" } { "messageType": "serviceInteraction", "data": { "serviceId" : "gate", "data": { "messageType": "readAllProperties"}}} { "messageType": "serviceInteraction", "data": { "serviceId" : "gate", "data": { "messageType": "requestAction", "data": { "id": "toggle", "data": { "requestId": "req"}}}}} { "messageType": "keepalive" }');
+    socket.send('{ "messageType": "authenticate", "data": {"password": "123456"}} { "messageType": "ping" } { "messageType": "describe" } { "messageType": "serviceInteraction", "data": { "serviceId" : "gate", "data": { "messageType": "readAllProperties"}}} { "messageType": "serviceInteraction", "data": { "serviceId" : "gate", "data": { "messageType": "requestAction", "data": { "id": "toggle", "requestId": "req", "data": { "arg": "example"}}}}} { "messageType": "keepalive" }');
 });
 
 socket.addEventListener('message', function (event) {
