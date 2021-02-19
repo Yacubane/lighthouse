@@ -22,18 +22,18 @@ NumberProperty temperatureProperty("room-temperature", {"NumberProperty"}, "");
 Service humidityService("room-humidity", {"HumiditySensor", "Sensor"}, "Humidity in room");
 NumberProperty humidityProperty("room-humidity", {"NumberProperty"}, "");
 
-void toggleWicketGateHandler(ActionStatus *actionStatus, JsonObject data)
+void toggleWicketGateHandler(ActionStatus *actionStatus, JsonVariant data)
 {
     actionStatus->set(ActionStatus::COMPLETED, "COMPLETED", "Action completed successfully");
 }
 
-void toggleGateHandler(ActionStatus *actionStatus, JsonObject data)
+void toggleGateHandler(ActionStatus *actionStatus, JsonVariant data)
 {
     gateProperty.setValue(gateProperty.getValue().equals("OPEN") ? "CLOSE" : "OPEN");
     actionStatus->set(ActionStatus::COMPLETED, "COMPLETED", "Action completed successfully");
 }
 
-void toggleLightHandler(ActionStatus *actionStatus, JsonObject data)
+void toggleLightHandler(ActionStatus *actionStatus, JsonVariant data)
 {
     lightProperty.setValue(lightProperty.getValue() ? false : true);
     actionStatus->set(ActionStatus::COMPLETED, "COMPLETED", "Action completed successfully");

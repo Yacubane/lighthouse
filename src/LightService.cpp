@@ -98,7 +98,7 @@ void Service::interpretMessage(HClient &client, Sender *sender, JsonObject &json
             return;
         }
 
-        JsonObject actionParameters = data["data"];
+        JsonVariant actionParameters = data["data"];
         ActionStatus *actionStatus = action->invokeAction(client, actionParameters);
         update(sender);
         action->getHandler()(actionStatus, data);
@@ -129,7 +129,7 @@ void Service::addProperty(Property &property)
     this->propertyList = newNode;
 }
 
-void Service::addAction(const char * id, std::vector<const char *> types, const char * description, void (*handler)(ActionStatus *actionStatus, JsonObject jsonObject))
+void Service::addAction(const char * id, std::vector<const char *> types, const char * description, void (*handler)(ActionStatus *actionStatus, JsonVariant data))
 {
     ActionNode *newNode = new ActionNode();
     Action *action = new Action(id, types, description);

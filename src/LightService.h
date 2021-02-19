@@ -35,7 +35,7 @@ public:
     void update(Sender *sender);
 
     void addProperty(Property &property);
-    void addAction(const char * id, std::vector<const char*> types, const char * description, void (*handler)(ActionStatus *actionStatus, JsonObject jsonObject));
+    void addAction(const char * id, std::vector<const char*> types, const char * description, void (*handler)(ActionStatus *actionStatus, JsonVariant data));
     void createJSONDescription(JsonObject jsonObject);
     void interpretMessage(HClient &client, Sender *sender, JsonObject &json);
 

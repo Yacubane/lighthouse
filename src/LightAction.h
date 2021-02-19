@@ -37,22 +37,22 @@ public:
         return this->description;
     }
 
-    void setHandler(void (*handler)(ActionStatus *actionStatus, JsonObject data))
+    void setHandler(void (*handler)(ActionStatus *actionStatus, JsonVariant data))
     {
         this->handler = handler;
     }
 
-    void (*getHandler(void))(ActionStatus *actionStatus, JsonObject data)
+    void (*getHandler(void))(ActionStatus *actionStatus, JsonVariant data)
     {
         return this->handler;
     }
 
-    bool areArgumentsValid(JsonObject data)
+    bool areArgumentsValid(JsonVariant data)
     {
         return true;
     }
 
-    ActionStatus *invokeAction(HClient &client, JsonObject data)
+    ActionStatus *invokeAction(HClient &client, JsonVariant data)
     {
         ActionStatus *actionStatus = new ActionStatus(String(counter++), getId(), data["requestId"], client.getId(), ActionStatus::PENDING, "PENDING", "Starting action");
         actionStatus->setChanged(true);
@@ -80,5 +80,5 @@ private:
     ActionStatusNode *actionStatusList;
     std::vector<const char *> semanticTypes;
     unsigned long counter;
-    void (*handler)(ActionStatus *actionStatus, JsonObject data);
+    void (*handler)(ActionStatus *actionStatus, JsonVariant data);
 };
