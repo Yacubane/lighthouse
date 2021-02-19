@@ -101,7 +101,7 @@ void Service::interpretMessage(HClient &client, Sender *sender, JsonObject &json
         JsonVariant actionParameters = data["data"];
         ActionStatus *actionStatus = action->invokeAction(client, actionParameters);
         update(sender);
-        action->getHandler()(actionStatus, data);
+        action->getHandler()(actionStatus, actionParameters);
     }
     else if (messageType.equals("readAllProperties"))
     {
