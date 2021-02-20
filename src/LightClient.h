@@ -32,7 +32,8 @@ public:
         return this->connected;
     }
 
-    void setId(String id) {
+    void setId(String id)
+    {
         this->id = id;
     }
 

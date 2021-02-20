@@ -129,7 +129,7 @@ void Service::addProperty(Property &property)
     this->propertyList = newNode;
 }
 
-void Service::addAction(const char * id, std::vector<const char *> types, const char * description, void (*handler)(ActionStatus *actionStatus, JsonVariant data))
+void Service::addAction(const char *id, std::vector<const char *> types, const char *description, void (*handler)(ActionStatus *actionStatus, JsonVariant data))
 {
     ActionNode *newNode = new ActionNode();
     Action *action = new Action(id, types, description);

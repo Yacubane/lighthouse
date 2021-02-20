@@ -37,7 +37,12 @@ public:
         return this->description;
     }
 
-    void setError(const char *errorType, const char *errorMessage) {
+    void setError(const char *errorType, const char *errorMessage)
+    {
+        if (!this->error)
+        {
+            this->setChanged(true);
+        }
         this->error = true;
         this->errorType = errorType;
         this->errorMessage = errorMessage;
@@ -50,10 +55,12 @@ public:
 
     virtual String getType() = 0;
     virtual void addToJson(JsonObject jsonObject) = 0;
+
 protected:
     bool error;
     const char *errorType;
     const char *errorMessage;
+
 private:
     const char *id;
     const char *description;
@@ -92,11 +99,14 @@ public:
     {
         jsonObject["id"] = this->getId();
         jsonObject["error"] = this->error;
-        if (this->error) {
+        if (this->error)
+        {
             jsonObject["value"] = nullptr;
             jsonObject["errorType"] = this->errorType;
             jsonObject["errorMessage"] = this->errorMessage;
-        } else {
+        }
+        else
+        {
             jsonObject["value"] = this->getValue();
         }
     }
@@ -134,11 +144,14 @@ public:
     {
         jsonObject["id"] = this->getId();
         jsonObject["error"] = this->error;
-        if (this->error) {
+        if (this->error)
+        {
             jsonObject["value"] = nullptr;
             jsonObject["errorType"] = this->errorType;
             jsonObject["errorMessage"] = this->errorMessage;
-        } else {
+        }
+        else
+        {
             jsonObject["value"] = this->getValue();
         }
     }
@@ -176,11 +189,14 @@ public:
     {
         jsonObject["id"] = this->getId();
         jsonObject["error"] = this->error;
-        if (this->error) {
+        if (this->error)
+        {
             jsonObject["value"] = nullptr;
             jsonObject["errorType"] = this->errorType;
             jsonObject["errorMessage"] = this->errorMessage;
-        } else {
+        }
+        else
+        {
             jsonObject["value"] = this->getValue();
         }
     }
@@ -218,11 +234,14 @@ public:
     {
         jsonObject["id"] = this->getId();
         jsonObject["error"] = this->error;
-        if (this->error) {
+        if (this->error)
+        {
             jsonObject["value"] = nullptr;
             jsonObject["errorType"] = this->errorType;
             jsonObject["errorMessage"] = this->errorMessage;
-        } else {
+        }
+        else
+        {
             jsonObject["value"] = this->getValue();
         }
     }

@@ -30,12 +30,12 @@ struct ActionNode
 class Service
 {
 public:
-    Service(String id, std::vector<const char*> types, String description);
+    Service(String id, std::vector<const char *> types, String description);
 
     void update(Sender *sender);
 
     void addProperty(Property &property);
-    void addAction(const char * id, std::vector<const char*> types, const char * description, void (*handler)(ActionStatus *actionStatus, JsonVariant data));
+    void addAction(const char *id, std::vector<const char *> types, const char *description, void (*handler)(ActionStatus *actionStatus, JsonVariant data));
     void createJSONDescription(JsonObject jsonObject);
     void interpretMessage(HClient &client, Sender *sender, JsonObject &json);
 
@@ -51,7 +51,7 @@ public:
 
 private:
     String id;
-    std::vector<const char*> types;
+    std::vector<const char *> types;
     int typesLength;
     String description;
 

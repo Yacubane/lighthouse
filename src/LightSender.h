@@ -10,7 +10,7 @@
 class Sender
 {
 public:
-    Sender(WebSocketsServer *webSocket, HClient* clients)
+    Sender(WebSocketsServer *webSocket, HClient *clients)
     {
         this->webSocket = webSocket;
         this->clients = clients;
@@ -32,11 +32,12 @@ public:
         }
     }
 
-    HClient* getClients() {
+    HClient *getClients()
+    {
         return clients;
     }
 
 private:
     WebSocketsServer *webSocket;
-    HClient* clients;
+    HClient *clients;
 };

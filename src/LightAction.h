@@ -52,7 +52,7 @@ public:
         return true;
     }
 
-    ActionStatus *invokeAction(HClient &client, const char* requestId, JsonVariant data)
+    ActionStatus *invokeAction(HClient &client, const char *requestId, JsonVariant data)
     {
         ActionStatus *actionStatus = new ActionStatus(String(counter++), getId(), requestId, client.getId(), ActionStatus::PENDING, "PENDING", "Starting action");
         actionStatus->setChanged(true);
