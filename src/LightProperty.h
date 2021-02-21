@@ -37,7 +37,7 @@ public:
         return this->description;
     }
 
-    void setError(const char *errorType, const char *errorMessage)
+    void setError(char *errorType, char *errorMessage)
     {
         if (!this->error)
         {
@@ -46,6 +46,30 @@ public:
         this->error = true;
         this->errorType = errorType;
         this->errorMessage = errorMessage;
+    }
+
+    void unsetError()
+    {
+        if (this->error)
+        {
+            this->setChanged(true);
+        }
+        this->error = false;
+    }
+
+    bool isError()
+    {
+        return this->error;
+    }
+
+    char *getErrorType()
+    {
+        return this->errorType;
+    }
+
+    char *getErrorType()
+    {
+        return this->errorMessage;
     }
 
     std::vector<const char *> getSemanticTypes()
@@ -58,8 +82,8 @@ public:
 
 protected:
     bool error;
-    const char *errorType;
-    const char *errorMessage;
+    char *errorType;
+    char *errorMessage;
 
 private:
     const char *id;
