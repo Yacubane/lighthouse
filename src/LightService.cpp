@@ -102,6 +102,35 @@ void Service::interpretMessage(HClient &client, Sender *sender, JsonObject &json
         ActionStatus *actionStatus = action->invokeAction(client, data["requestId"], actionParameters);
         update(sender);
         action->getHandler()(actionStatus, actionParameters);
+        update(sender);
+    }
+    if (messageType.equals("setProperty"))
+    {
+
+        if (!json.containsKey("data"))
+        {
+            return;
+        }
+        JsonObject data = json["data"];
+        if (!data.containsKey("id"))
+        {
+            return;
+        }
+        String propertyId = data["id"];
+        Property *property = findPropertyWithId(propertyId);
+        if (property == nullptr || property->isReadOnly())
+        {
+            return;
+        }
+
+        JsonVariant propertyData = data["value"];
+
+        if (!data["error"].isNull() && (bool)data["error"]) {
+            property->setError(data["errorType"], data["errorMessage"]);
+        } else {
+            property->setValue(propertyData);
+        }
+
     }
     else if (messageType.equals("readAllProperties"))
     {
@@ -137,6 +166,20 @@ void Service::addAction(const char *id, std::vector<const char *> types, const c
     newNode->action = action;
     newNode->next = this->actionList;
     this->actionList = newNode;
+}
+
+Property *Service::findPropertyWithId(String id)
+{
+    PropertyNode *propertyNode = this->propertyList;
+    while (propertyNode->next != nullptr)
+    {
+        if (id.equals(propertyNode->property->getId()))
+        {
+            return propertyNode->property;
+        }
+        propertyNode = propertyNode->next;
+    }
+    return nullptr;
 }
 
 Action *Service::findActionWithId(String id)

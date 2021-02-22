@@ -61,5 +61,6 @@ private:
     Device *device;
 
     Action *findActionWithId(String id);
+    Property *findPropertyWithId(String id);
     DynamicJsonDocument prepareMessage(int capacity, String type);
 };

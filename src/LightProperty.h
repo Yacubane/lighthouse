@@ -7,14 +7,23 @@
 class Property
 {
 public:
-    Property(const char *id, std::vector<const char *> semanticTypes, const char *description)
+    Property(const char *id, std::vector<const char *> semanticTypes, const char *description, bool readOnly = true)
     {
         this->id = id;
         this->changed = false;
         this->description = description;
         this->semanticTypes = semanticTypes;
         this->error = true;
-        this->errorType = "NoValue";
+        this->errorType = nullptr;
+        this->errorMessage = nullptr;
+        this->setError("NoValue", "There is no value");
+        this->readOnly = readOnly;
+        this->onChangeHandler = nullptr;
+    }
+
+    bool isReadOnly()
+    {
+        return this->readOnly;
     }
 
     bool isChanged()
@@ -25,6 +34,9 @@ public:
     void setChanged(bool flag)
     {
         this->changed = flag;
+        if (this->changed) {
+            notifyChange();
+        }
     }
 
     const char *getId()
@@ -37,15 +49,30 @@ public:
         return this->description;
     }
 
-    void setError(char *errorType, char *errorMessage)
+    void setError(const char *errorType, const char *errorMessage)
     {
-        if (!this->error)
+        if (!this->error || !String(this->errorType).equals(errorType) || !String(this->errorMessage).equals(errorMessage))
         {
             this->setChanged(true);
         }
         this->error = true;
-        this->errorType = errorType;
-        this->errorMessage = errorMessage;
+
+        if (this->errorType != nullptr)
+        {
+            delete[] this->errorType;
+        }
+        if (this->errorMessage != nullptr)
+        {
+            delete[] this->errorMessage;
+        }
+
+        this->errorType = new char[strlen(errorType) + 1];
+        this->errorMessage = new char[strlen(errorMessage) + 1];
+
+        strncpy(this->errorType, errorType, strlen(errorType));
+        this->errorType[strlen(errorType)] = '\0';
+        strncpy(this->errorMessage, errorMessage, strlen(errorMessage));
+        this->errorMessage[strlen(errorMessage)] = '\0';
     }
 
     void unsetError()
@@ -67,7 +94,7 @@ public:
         return this->errorType;
     }
 
-    char *getErrorType()
+    char *getErrorMessage()
     {
         return this->errorMessage;
     }
@@ -77,8 +104,22 @@ public:
         return this->semanticTypes;
     }
 
+    void setPropertyChangeListener(void (*onChangeHandler)())
+    {
+        this->onChangeHandler = onChangeHandler;
+    }
+
+    void notifyChange()
+    {
+        if (this->onChangeHandler != nullptr)
+        {
+            this->onChangeHandler();
+        }
+    }
+
     virtual String getType() = 0;
     virtual void addToJson(JsonObject jsonObject) = 0;
+    virtual bool setValue(JsonVariant jsonVariant) = 0;
 
 protected:
     bool error;
@@ -90,14 +131,14 @@ private:
     const char *description;
     bool changed;
     std::vector<const char *> semanticTypes;
+    void (*onChangeHandler)();
+    bool readOnly;
 };
 
 class BooleanProperty : public Property
 {
 public:
-    BooleanProperty(const char *id, std::vector<const char *> semanticTypes, const char *description) : Property(id, semanticTypes, description)
-    {
-    }
+    BooleanProperty(const char *id, std::vector<const char *> semanticTypes, const char *description, bool isReadOnly = true) : Property(id, semanticTypes, description, isReadOnly) {}
 
     void setValue(bool value)
     {
@@ -107,6 +148,17 @@ public:
         }
         this->value = value;
         this->error = false;
+    }
+
+    bool setValue(JsonVariant jsonValue)
+    {
+        if (jsonValue.isNull() || !jsonValue.is<bool>())
+        {
+            return false;
+        }
+        bool value = jsonValue.as<bool>();
+        this->setValue(value);
+        return true;
     }
 
     bool getValue()
@@ -142,7 +194,7 @@ private:
 class IntegerProperty : public Property
 {
 public:
-    IntegerProperty(const char *id, std::vector<const char *> semanticTypes, const char *description) : Property(id, semanticTypes, description) {}
+    IntegerProperty(const char *id, std::vector<const char *> semanticTypes, const char *description, bool isReadOnly = true) : Property(id, semanticTypes, description, isReadOnly) {}
 
     void setValue(int32_t value)
     {
@@ -152,6 +204,17 @@ public:
         }
         this->value = value;
         this->error = false;
+    }
+
+    bool setValue(JsonVariant jsonValue)
+    {
+        if (jsonValue.isNull() || !jsonValue.is<int>())
+        {
+            return false;
+        }
+        int value = jsonValue.as<int>();
+        this->setValue(value);
+        return true;
     }
 
     int32_t getValue()
@@ -187,7 +250,7 @@ private:
 class StringProperty : public Property
 {
 public:
-    StringProperty(const char *id, std::vector<const char *> semanticTypes, const char *description) : Property(id, semanticTypes, description) {}
+    StringProperty(const char *id, std::vector<const char *> semanticTypes, const char *description, bool isReadOnly = true) : Property(id, semanticTypes, description, isReadOnly) {}
 
     void setValue(String value)
     {
@@ -197,6 +260,17 @@ public:
         }
         this->value = value;
         this->error = false;
+    }
+
+    bool setValue(JsonVariant jsonValue)
+    {
+        if (jsonValue.isNull() || !jsonValue.is<const char *>())
+        {
+            return false;
+        }
+        const char *value = jsonValue.as<const char *>();
+        this->setValue(value);
+        return true;
     }
 
     String getValue()
@@ -232,7 +306,7 @@ private:
 class NumberProperty : public Property
 {
 public:
-    NumberProperty(const char *id, std::vector<const char *> semanticTypes, const char *description) : Property(id, semanticTypes, description) {}
+    NumberProperty(const char *id, std::vector<const char *> semanticTypes, const char *description, bool isReadOnly = true) : Property(id, semanticTypes, description, isReadOnly) {}
 
     void setValue(double value)
     {
@@ -242,6 +316,17 @@ public:
         }
         this->value = value;
         this->error = false;
+    }
+
+    bool setValue(JsonVariant jsonValue)
+    {
+        if (jsonValue.isNull() || !jsonValue.is<double>())
+        {
+            return false;
+        }
+        double value = jsonValue.as<double>();
+        this->setValue(value);
+        return true;
     }
 
     double getValue()
