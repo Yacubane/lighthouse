@@ -12,6 +12,13 @@ Device::Device(char *name, int port)
 
   this->isOTAEnabled = false;
   this->isWifiSetupEnabled = false;
+  this->isUDPActive = false;
+}
+
+void Device::setUDPSupport(int port) {
+  this->udp = new WiFiUDP();
+  this->udpPort = port;
+  this->isUDPActive = true;
 }
 
 DynamicJsonDocument Device::prepareMessage(int capacity, String type)
@@ -38,7 +45,7 @@ void Device::webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload,
     if (!this->isFreeSpaceForNewClient())
     {
       clients[num].setConnected();
-      this->sender->send("{ \"messageType\": \"noSpace\" }", clients[num]);
+      this->mainSender->send("{ \"messageType\": \"noSpace\" }", clients[num]);
       this->webSocket->disconnect(num);
       clients[num].setDisconnected();
     }
@@ -53,7 +60,7 @@ void Device::webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload,
   {
     Serial.printf("[%u] get Text: %s\n", num, payload);
     String message = (char *)payload;
-    this->interpretMessage(this->clients[num], message);
+    this->interpretMessage(this->clients[num], this->mainSender, message);
   }
   break;
   case WStype_FRAGMENT_TEXT_START:
@@ -68,12 +75,12 @@ void Device::webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload,
     this->fragmentBuffer[num] += (char *)payload;
     Serial.printf("[%u] get end of Textfragment: %s\n", num, payload);
     Serial.printf("[%u] full frame: %s\n", num, fragmentBuffer[num].c_str());
-    this->interpretMessage(this->clients[num], fragmentBuffer[num]);
+    this->interpretMessage(this->clients[num], this->mainSender, fragmentBuffer[num]);
     break;
   }
 }
 
-void Device::interpretMessage(HClient &client, String message)
+void Device::interpretMessage(HClient &client, Sender* sender, String message)
 {
   String restMessage = message;
   String jsonMessage = "";
@@ -103,7 +110,7 @@ void Device::interpretMessage(HClient &client, String message)
               deserializeJson(doc, jsonMessage);
           if (deserializationError.code() == deserializationError.Ok)
           {
-            this->interpretMessage(client, doc);
+            this->interpretMessage(client, sender, doc);
             foundMessage = true;
           }
           else
@@ -125,7 +132,7 @@ void Device::interpretMessage(HClient &client, String message)
   }
 }
 
-void Device::interpretMessage(HClient &client, DynamicJsonDocument &json)
+void Device::interpretMessage(HClient &client, Sender* sender, DynamicJsonDocument &json)
 {
   String messageType = json["messageType"];
 
@@ -144,11 +151,11 @@ void Device::interpretMessage(HClient &client, DynamicJsonDocument &json)
     if (password.equals(this->devicePassword))
     {
       client.setAuthenticated(true);
-      sendSimpleMessage(client, "authenticationSuccess");
+      sendSimpleMessage(sender, client, "authenticationSuccess");
     }
     else
     {
-      sendSimpleMessage(client, "authenticationFail");
+      sendSimpleMessage(sender, client, "authenticationFail");
     }
   }
   else if (messageType.equals("keepalive"))
@@ -157,13 +164,13 @@ void Device::interpretMessage(HClient &client, DynamicJsonDocument &json)
   }
   else if (messageType.equals("ping"))
   {
-    sendSimpleMessage(client, "pong");
+    sendSimpleMessage(sender, client, "pong");
   }
   else if (messageType.equals("describe"))
   {
     if (!client.isAuthenticated())
     {
-      sendSimpleMessage(client, "authenticationRequired");
+      sendSimpleMessage(sender, client, "authenticationRequired");
       return;
     }
 
@@ -180,13 +187,13 @@ void Device::interpretMessage(HClient &client, DynamicJsonDocument &json)
 
     String output;
     serializeJson(doc, output);
-    this->sender->send(output, client);
+    sender->send(output, client);
   }
   else if (messageType.equals("serviceInteraction"))
   {
     if (!client.isAuthenticated())
     {
-      sendSimpleMessage(client, "authenticationRequired");
+      sendSimpleMessage(sender, client, "authenticationRequired");
       return;
     }
     if (!json.containsKey("data"))
@@ -261,6 +268,12 @@ void Device::setOTA(const char *password)
   this->isOTAEnabled = true;
 }
 
+void Device::setupUDP() {
+  if (this->isUDPActive) {
+    udp->begin(this->udpPort);
+  }
+}
+
 void Device::start()
 {
   this->webSocket = new WebSocketsServer(this->port);
@@ -272,7 +285,8 @@ void Device::start()
   };
   this->webSocket->onEvent(eventFunction);
 
-  this->sender = new Sender(this->webSocket, clients);
+  this->mainSender = new Sender(this->webSocket, clients);
+  this->setupUDP();
 }
 
 Service *Device::findServiceWithId(String id)
@@ -298,12 +312,12 @@ void Device::addService(Service *service)
   this->serviceList = newNode;
 }
 
-void Device::sendSimpleMessage(HClient &client, String type)
+void Device::sendSimpleMessage(Sender* sender, HClient &client, String type)
 {
   DynamicJsonDocument doc = this->prepareMessage(SMALL_MESSAGE_JSON_SIZE, type);
   String output;
   serializeJson(doc, output);
-  this->sender->send(output, client);
+  sender->send(output, client);
 }
 
 bool Device::isFreeSpaceForNewClient()
@@ -326,6 +340,42 @@ bool Device::isMessageProper(DynamicJsonDocument &json)
   return json.containsKey("messageType");
 }
 
+void Device::updateUDP() {
+  int packetSize = 0;
+  do {
+    packetSize = udp->parsePacket();
+    if (packetSize)
+    {
+      Serial.printf("Received %d bytes from %s, port %d\n", packetSize, udp->remoteIP().toString().c_str(), udp->remotePort());
+      if (packetSize > 2000) {
+        Serial.println("Too long message!");
+        return;
+      }
+      char* buffer = new char[packetSize+1];
+      int len = udp->read(buffer, packetSize);
+      if (len > 0)
+      {
+        buffer[len] = '\0';
+      }
+
+      Serial.printf("UDP packet contents: %s\n", buffer);
+
+      HClient client(-1);
+      UdpSender udpSender;
+      Sender* tempSender = &udpSender;
+      this->interpretMessage(client, &udpSender, String(buffer));
+    } 
+  }
+  while(packetSize > 0);
+}
+
+void Device::sendUdpPacket(const char* ip, int port, const char* message) 
+{
+  udp->beginPacket(ip, port);
+  udp->write(message);
+  udp->endPacket();
+}
+
 void Device::update()
 {
   if (this->isOTAEnabled)
@@ -338,11 +388,15 @@ void Device::update()
     this->ensureHasWifi();
   }
 
+  if (this->isUDPActive) {
+    this->updateUDP();
+  }
+
   this->webSocket->loop();
   ServiceNode *serviceNode = this->serviceList;
   while (serviceNode->next != nullptr)
   {
-    serviceNode->service->update(sender);
+    serviceNode->service->update(this->mainSender);
     serviceNode = serviceNode->next;
   }
 
@@ -352,7 +406,7 @@ void Device::update()
     {
       if (this->clients[i].isKeepaliveTimeout())
       {
-        sendSimpleMessage(this->clients[i], "keepaliveTimeout");
+        sendSimpleMessage(this->mainSender, this->clients[i], "keepaliveTimeout");
         this->webSocket->disconnect(this->clients[i].getSocketId());
       }
     }

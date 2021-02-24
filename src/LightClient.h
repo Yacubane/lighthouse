@@ -12,6 +12,7 @@ public:
     HClient(int socketId)
     {
         this->socketId = socketId;
+        this->authenticated = false;
         this->connected = false;
     }
 

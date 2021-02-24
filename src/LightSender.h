@@ -10,18 +10,20 @@
 class Sender
 {
 public:
+    Sender(){}
+
     Sender(WebSocketsServer *webSocket, HClient *clients)
     {
         this->webSocket = webSocket;
         this->clients = clients;
     }
 
-    void send(String text, HClient &client)
+    virtual void send(String text, HClient &client)
     {
         this->webSocket->sendTXT(client.getSocketId(), text);
     }
 
-    void sendAll(String text)
+    virtual void sendAll(String text)
     {
         for (int i = 0; i < MAX_CLIENTS; i++)
         {
@@ -32,7 +34,7 @@ public:
         }
     }
 
-    HClient *getClients()
+    virtual HClient *getClients()
     {
         return clients;
     }
