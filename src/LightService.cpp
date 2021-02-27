@@ -125,12 +125,14 @@ void Service::interpretMessage(HClient &client, Sender *sender, JsonObject &json
 
         JsonVariant propertyData = data["value"];
 
-        if (!data["error"].isNull() && (bool)data["error"]) {
+        if (!data["error"].isNull() && (bool)data["error"])
+        {
             property->setError(data["errorType"], data["errorMessage"]);
-        } else {
+        }
+        else
+        {
             property->setValue(propertyData);
         }
-
     }
     else if (messageType.equals("readAllProperties"))
     {
@@ -198,6 +200,10 @@ Action *Service::findActionWithId(String id)
 
 void Service::update(Sender *sender)
 {
+    if (sender->getClients() == nullptr)
+    {
+        return;
+    }
 
     PropertyNode *propertyNode = this->propertyList;
     while (propertyNode->next != nullptr)
