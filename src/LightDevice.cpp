@@ -13,9 +13,11 @@ Device::Device(char *name, int port)
   this->isOTAEnabled = false;
   this->isWifiSetupEnabled = false;
   this->isUDPActive = false;
+  this->wifiStatusNotifier = nullptr;
 }
 
-void Device::setUDPSupport(int port) {
+void Device::setUDPSupport(int port)
+{
   this->udp = new WiFiUDP();
   this->udpPort = port;
   this->isUDPActive = true;
@@ -80,7 +82,7 @@ void Device::webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload,
   }
 }
 
-void Device::interpretMessage(HClient &client, Sender* sender, String message)
+void Device::interpretMessage(HClient &client, Sender *sender, String message)
 {
   String restMessage = message;
   String jsonMessage = "";
@@ -132,7 +134,7 @@ void Device::interpretMessage(HClient &client, Sender* sender, String message)
   }
 }
 
-void Device::interpretMessage(HClient &client, Sender* sender, DynamicJsonDocument &json)
+void Device::interpretMessage(HClient &client, Sender *sender, DynamicJsonDocument &json)
 {
   String messageType = json["messageType"];
 
@@ -221,6 +223,8 @@ void Device::interpretMessage(HClient &client, Sender* sender, DynamicJsonDocume
 
 void Device::ensureHasWifi()
 {
+  if (wifiStatusNotifier != nullptr)
+    wifiStatusNotifier(WiFi.status() == WL_CONNECTED ? WiFiStatus::CONNECTED : WiFiStatus::DISCONNECTED);
   if (WiFi.status() != WL_CONNECTED)
   {
     WiFi.disconnect();
@@ -229,10 +233,32 @@ void Device::ensureHasWifi()
     {
       if (counter >= 5)
       {
+        if (wifiStatusNotifier != nullptr)
+          wifiStatusNotifier(WiFiStatus::CONNECTING_ERROR);
         ESP.restart();
       }
       WiFi.begin(this->wifiSsid, this->wifiPassword);
-      delay(15000);
+
+      if (wifiStatusNotifier != nullptr)
+      {
+        int iterations = WIFI_CONNECTING_MAX_TIME / this->wifiStatusConnectingPulseTime;
+        for (int i = 0; i < iterations; i++)
+        {
+          wifiStatusNotifier(WiFiStatus::CONNECTING);
+          if (WiFi.status() == WL_CONNECTED)
+          {
+            if (wifiStatusNotifier != nullptr)
+              wifiStatusNotifier(WiFiStatus::CONNECTED);
+            return;
+          }
+          delay(this->wifiStatusConnectingPulseTime);
+        }
+      }
+      else
+      {
+        delay(WIFI_CONNECTING_MAX_TIME);
+      }
+
       counter++;
     }
   }
@@ -240,20 +266,6 @@ void Device::ensureHasWifi()
 
 void Device::setWiFi(String ssid, String password)
 {
-  WiFi.mode(WIFI_STA);
-  WiFi.disconnect(true);
-  WiFi.begin(ssid, password);
-  Serial.println();
-  Serial.println("Connecting to WiFi...");
-  while (WiFi.status() != WL_CONNECTED)
-  {
-    Serial.print(".");
-    delay(500);
-  }
-  Serial.println("");
-  WiFi.setAutoReconnect(true);
-  Serial.print("IP address:\t");
-  Serial.println(WiFi.localIP());
   this->wifiSsid = ssid;
   this->wifiPassword = password;
   this->port = port;
@@ -268,14 +280,25 @@ void Device::setOTA(const char *password)
   this->isOTAEnabled = true;
 }
 
-void Device::setupUDP() {
-  if (this->isUDPActive) {
+void Device::setupUDP()
+{
+  if (this->isUDPActive)
+  {
     udp->begin(this->udpPort);
   }
 }
 
 void Device::start()
 {
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect(true);
+  Serial.println();
+  Serial.println("Starting thing...");
+  this->ensureHasWifi();
+  WiFi.setAutoReconnect(true);
+  Serial.print("IP address:\t");
+  Serial.println(WiFi.localIP());
+
   this->webSocket = new WebSocketsServer(this->port);
   this->webSocket->begin();
 
@@ -312,7 +335,7 @@ void Device::addService(Service *service)
   this->serviceList = newNode;
 }
 
-void Device::sendSimpleMessage(Sender* sender, HClient &client, String type)
+void Device::sendSimpleMessage(Sender *sender, HClient &client, String type)
 {
   DynamicJsonDocument doc = this->prepareMessage(SMALL_MESSAGE_JSON_SIZE, type);
   String output;
@@ -340,18 +363,21 @@ bool Device::isMessageProper(DynamicJsonDocument &json)
   return json.containsKey("messageType");
 }
 
-void Device::updateUDP() {
+void Device::updateUDP()
+{
   int packetSize = 0;
-  do {
+  do
+  {
     packetSize = udp->parsePacket();
     if (packetSize)
     {
       Serial.printf("Received %d bytes from %s, port %d\n", packetSize, udp->remoteIP().toString().c_str(), udp->remotePort());
-      if (packetSize > 2000) {
+      if (packetSize > 2000)
+      {
         Serial.println("Too long message!");
         return;
       }
-      char* buffer = new char[packetSize+1];
+      char *buffer = new char[packetSize + 1];
       int len = udp->read(buffer, packetSize);
       if (len > 0)
       {
@@ -362,14 +388,13 @@ void Device::updateUDP() {
 
       HClient client(-1);
       UdpSender udpSender;
-      Sender* tempSender = &udpSender;
+      Sender *tempSender = &udpSender;
       this->interpretMessage(client, &udpSender, String(buffer));
-    } 
-  }
-  while(packetSize > 0);
+    }
+  } while (packetSize > 0);
 }
 
-void Device::sendUdpPacket(const char* ip, int port, const char* message) 
+void Device::sendUdpPacket(const char *ip, int port, const char *message)
 {
   udp->beginPacket(ip, port);
   udp->write(message);
@@ -388,7 +413,8 @@ void Device::update()
     this->ensureHasWifi();
   }
 
-  if (this->isUDPActive) {
+  if (this->isUDPActive)
+  {
     this->updateUDP();
   }
 

@@ -16,6 +16,7 @@
 #include "LightDefines.h"
 
 #define MAX_CLIENTS 5
+#define WIFI_CONNECTING_MAX_TIME 20000 // 20000ms = 20s
 
 class Service;
 
@@ -28,6 +29,13 @@ struct ServiceNode
 class Device
 {
 public:
+    enum WiFiStatus
+    {
+        CONNECTED,
+        DISCONNECTED,
+        CONNECTING,
+        CONNECTING_ERROR
+    };
     Device(char *name, int port);
 
     void setWiFi(String ssid, String password);
@@ -76,4 +84,7 @@ private:
     void ensureHasWifi();
     void setupUDP();
     void updateUDP();
+    void setWifiStatusNotifier(void (*wifiStatusHandler)(WiFiStatus status), int connectingPulseTime);
+    int wifiStatusConnectingPulseTime;
+    void (*wifiStatusNotifier)(WiFiStatus status);
 };
