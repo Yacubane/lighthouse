@@ -23,6 +23,11 @@ void Device::setUDPSupport(int port)
   this->isUDPActive = true;
 }
 
+void Device::setWifiStatusNotifier(void (*wifiStatusNotifier)(WiFiStatus status), int wifiStatusConnectingPulseTime) {
+  this->wifiStatusNotifier = wifiStatusNotifier;
+  this->wifiStatusConnectingPulseTime = wifiStatusConnectingPulseTime;
+}
+
 DynamicJsonDocument Device::prepareMessage(int capacity, String type)
 {
   DynamicJsonDocument doc(capacity);

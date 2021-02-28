@@ -72,6 +72,8 @@ private:
     bool isOTAEnabled;
     bool isWifiSetupEnabled;
     bool isUDPActive;
+    int wifiStatusConnectingPulseTime;
+    void (*wifiStatusNotifier)(WiFiStatus status);
 
     void sendSimpleMessage(Sender* sender, HClient &client, String type);
     bool isFreeSpaceForNewClient();
@@ -85,6 +87,4 @@ private:
     void setupUDP();
     void updateUDP();
     void setWifiStatusNotifier(void (*wifiStatusHandler)(WiFiStatus status), int connectingPulseTime);
-    int wifiStatusConnectingPulseTime;
-    void (*wifiStatusNotifier)(WiFiStatus status);
 };
