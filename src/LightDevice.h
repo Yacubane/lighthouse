@@ -41,6 +41,7 @@ public:
     void setWiFi(String ssid, String password);
     void setOTA(const char *password);
     void setUDPSupport(int port);
+    void setWifiStatusNotifier(void (*wifiStatusHandler)(WiFiStatus status), int connectingPulseTime);
     void update();
     void start();
 
@@ -86,5 +87,4 @@ private:
     void ensureHasWifi();
     void setupUDP();
     void updateUDP();
-    void setWifiStatusNotifier(void (*wifiStatusHandler)(WiFiStatus status), int connectingPulseTime);
 };
