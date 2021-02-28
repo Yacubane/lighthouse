@@ -231,7 +231,7 @@ void Device::ensureHasWifi()
     int counter = 0;
     while (WiFi.status() != WL_CONNECTED)
     {
-      if (counter >= 5)
+      if (counter >= 4)
       {
         if (wifiStatusNotifier != nullptr)
           wifiStatusNotifier(WiFiStatus::CONNECTING_ERROR);
