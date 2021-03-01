@@ -279,9 +279,7 @@ void Device::setWiFi(String ssid, String password)
 
 void Device::setOTA(const char *password)
 {
-  ArduinoOTA.setHostname(this->name);
-  ArduinoOTA.setPassword(password);
-  ArduinoOTA.begin();
+  this->OTAPassword = password;
   this->isOTAEnabled = true;
 }
 
@@ -303,6 +301,13 @@ void Device::start()
   WiFi.setAutoReconnect(true);
   Serial.print("IP address:\t");
   Serial.println(WiFi.localIP());
+
+  if (this->isOTAEnabled) 
+  {
+    ArduinoOTA.setHostname(this->name);
+    ArduinoOTA.setPassword(this->OTAPassword);
+    ArduinoOTA.begin();
+  }
 
   this->webSocket = new WebSocketsServer(this->port);
   this->webSocket->begin();

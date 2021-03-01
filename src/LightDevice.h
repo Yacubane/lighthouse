@@ -70,6 +70,7 @@ private:
 
     String wifiSsid;
     String wifiPassword;
+    const char *OTAPassword;
     bool isOTAEnabled;
     bool isWifiSetupEnabled;
     bool isUDPActive;
