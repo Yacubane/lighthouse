@@ -244,24 +244,29 @@ void Device::ensureHasWifi()
       }
       WiFi.begin(this->wifiSsid, this->wifiPassword);
 
+      int iterations = 0;
+      int connectionPulseTime = 0;
       if (wifiStatusNotifier != nullptr)
       {
-        int iterations = WIFI_CONNECTING_MAX_TIME / this->wifiStatusConnectingPulseTime;
-        for (int i = 0; i < iterations; i++)
-        {
-          wifiStatusNotifier(WiFiStatus::CONNECTING);
-          if (WiFi.status() == WL_CONNECTED)
-          {
-            if (wifiStatusNotifier != nullptr)
-              wifiStatusNotifier(WiFiStatus::CONNECTED);
-            return;
-          }
-          delay(this->wifiStatusConnectingPulseTime);
-        }
+        connectionPulseTime = this->wifiStatusConnectingPulseTime;
       }
       else
       {
-        delay(WIFI_CONNECTING_MAX_TIME);
+        connectionPulseTime = 100;
+      }
+
+      iterations = WIFI_CONNECTING_MAX_TIME / connectionPulseTime;
+      for (int i = 0; i < iterations; i++)
+      {
+        if (wifiStatusNotifier != nullptr)
+          wifiStatusNotifier(WiFiStatus::CONNECTING);
+        if (WiFi.status() == WL_CONNECTED)
+        {
+          if (wifiStatusNotifier != nullptr)
+            wifiStatusNotifier(WiFiStatus::CONNECTED);
+          return;
+        }
+        delay(connectionPulseTime);
       }
 
       counter++;
