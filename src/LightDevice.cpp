@@ -485,6 +485,7 @@ void Device::updateUDP()
       UdpSender udpSender;
       Sender *tempSender = &udpSender;
       this->interpretMessage(client, &udpSender, String(buffer));
+      delete [] buffer;
     }
   } while (packetSize > 0);
 }
