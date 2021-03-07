@@ -27,6 +27,25 @@ public:
                           freeHeap("freeHeap", {}, ""),
                           millisProperty("millis", {}, "")
     {
+        mac.setWatchable(false);
+        fullVersion.setWatchable(false);
+        sdkVersion.setWatchable(false);
+        sketchSize.setWatchable(false);
+        freeSketchSpace.setWatchable(false);
+        sketchMD5.setWatchable(false);
+        chipId.setWatchable(false);
+        coreVersion.setWatchable(false);
+        bootMode.setWatchable(false);
+        bootVersion.setWatchable(false);
+        rssi.setWatchable(false);
+        vcc.setWatchable(false);
+        bssid.setWatchable(false);
+        rssi.setWatchable(false);
+        ssid.setWatchable(false);
+        cycleCount.setWatchable(false);
+        freeHeap.setWatchable(false);
+        millisProperty.setWatchable(false);
+
         this->mac.setValue(WiFi.macAddress());
         this->fullVersion.setValue(ESP.getFullVersion());
         this->sdkVersion.setValue(ESP.getSdkVersion());
