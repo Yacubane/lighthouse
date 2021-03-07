@@ -23,7 +23,8 @@ void Device::setUDPSupport(int port)
   this->isUDPActive = true;
 }
 
-void Device::setWifiStatusNotifier(void (*wifiStatusNotifier)(WiFiStatus status), int wifiStatusConnectingPulseTime) {
+void Device::setWifiStatusNotifier(void (*wifiStatusNotifier)(WiFiStatus status), int wifiStatusConnectingPulseTime)
+{
   this->wifiStatusNotifier = wifiStatusNotifier;
   this->wifiStatusConnectingPulseTime = wifiStatusConnectingPulseTime;
 }
@@ -41,13 +42,13 @@ void Device::webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload,
   switch (type)
   {
   case WStype_DISCONNECTED:
-    Serial.printf("[%u] Disconnected\n", num);
+    logf("[%u] Disconnected\n", num);
     clients[num].setDisconnected();
     break;
   case WStype_CONNECTED:
   {
     IPAddress ip = this->webSocket->remoteIP(num);
-    Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\n", num, ip[0],
+    logf("[%u] Connected from %d.%d.%d.%d url: %s\n", num, ip[0],
                   ip[1], ip[2], ip[3], payload);
     if (!this->isFreeSpaceForNewClient())
     {
@@ -65,23 +66,23 @@ void Device::webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload,
   break;
   case WStype_TEXT:
   {
-    Serial.printf("[%u] get Text: %s\n", num, payload);
+    logf("[%u] get Text: %s\n", num, payload);
     String message = (char *)payload;
     this->interpretMessage(this->clients[num], this->mainSender, message);
   }
   break;
   case WStype_FRAGMENT_TEXT_START:
     this->fragmentBuffer[num] = (char *)payload;
-    Serial.printf("[%u] get start start of Textfragment: %s\n", num, payload);
+    logf("[%u] get start start of Textfragment: %s\n", num, payload);
     break;
   case WStype_FRAGMENT:
     this->fragmentBuffer[num] += (char *)payload;
-    Serial.printf("[%u] get Textfragment : %s\n", num, payload);
+    logf("[%u] get Textfragment : %s\n", num, payload);
     break;
   case WStype_FRAGMENT_FIN:
     this->fragmentBuffer[num] += (char *)payload;
-    Serial.printf("[%u] get end of Textfragment: %s\n", num, payload);
-    Serial.printf("[%u] full frame: %s\n", num, fragmentBuffer[num].c_str());
+    logf("[%u] get end of Textfragment: %s\n", num, payload);
+    logf("[%u] full frame: %s\n", num, fragmentBuffer[num].c_str());
     this->interpretMessage(this->clients[num], this->mainSender, fragmentBuffer[num]);
     break;
   }
@@ -110,7 +111,7 @@ void Device::interpretMessage(HClient &client, Sender *sender, String message)
           jsonMessage = restMessage.substring(0, i + 1);
           restMessage = restMessage.substring(i + 1);
 
-          Serial.printf("Parsing JSON: %s\n", jsonMessage.c_str());
+          logf("Parsing JSON: %s\n", jsonMessage.c_str());
 
           DynamicJsonDocument doc(INCOMING_JSON_CAPACITY);
           DeserializationError deserializationError =
@@ -122,7 +123,7 @@ void Device::interpretMessage(HClient &client, Sender *sender, String message)
           }
           else
           {
-            Serial.printf("Error parsing JSON: %s\n",
+            logf("Error parsing JSON: %s\n",
                           deserializationError.c_str());
           }
 
@@ -133,7 +134,7 @@ void Device::interpretMessage(HClient &client, Sender *sender, String message)
     // could not find json message :(
     if (!foundMessage)
     {
-      Serial.println("Could not find JSON message!");
+      logf("Could not find JSON message!");
       return;
     }
   }
@@ -224,6 +225,25 @@ void Device::interpretMessage(HClient &client, Sender *sender, DynamicJsonDocume
       service->interpretMessage(client, sender, messageToService);
     }
   }
+  else if (messageType.equals("setupLogs"))
+  {
+    if (!client.isAuthenticated())
+    {
+      sendSimpleMessage(sender, client, "authenticationRequired");
+      return;
+    }
+    if (!json.containsKey("data"))
+    {
+      return;
+    }
+    JsonObject data = json["data"];
+    if (!data.containsKey("enabled"))
+    {
+      return;
+    }
+    bool enabled = data["enabled"];
+    client.setLogEnabled(enabled);
+  }
 }
 
 void Device::ensureHasWifi()
@@ -307,7 +327,7 @@ void Device::start()
   Serial.print("IP address:\t");
   Serial.println(WiFi.localIP());
 
-  if (this->isOTAEnabled) 
+  if (this->isOTAEnabled)
   {
     ArduinoOTA.setHostname(this->name);
     ArduinoOTA.setPassword(this->OTAPassword);
@@ -368,9 +388,69 @@ bool Device::isFreeSpaceForNewClient()
       clientsConnected++;
     }
   }
-  Serial.print("Connected: ");
-  Serial.println(clientsConnected);
   return clientsConnected < (MAX_CLIENTS - 1);
+}
+
+void Device::logToDevices(const char *text)
+{
+  bool atLeastOneDeviceHasEnabledLogging = false;
+  for (int i = 0; i < MAX_CLIENTS; i++)
+  {
+    if (this->clients[i].isConnected() && this->clients[i].isLogEnabled())
+    {
+      atLeastOneDeviceHasEnabledLogging = true;
+      break;
+    }
+  }
+  if (!atLeastOneDeviceHasEnabledLogging) {
+    return;
+  }
+  DynamicJsonDocument doc(SMALL_MESSAGE_JSON_SIZE);
+  doc["messageType"] = "log";
+  doc["data"] = text;
+  String output;
+  serializeJson(doc, output);
+  for (int i = 0; i < MAX_CLIENTS; i++)
+  {
+    if (this->clients[i].isConnected() && this->clients[i].isLogEnabled())
+    {
+      this->mainSender->send(output, this->clients[i]);
+    }
+  }
+}
+
+void Device::log(const char *text)
+{
+  Serial.println(text);
+  logToDevices(text);
+}
+
+size_t Device::logf(const char *format, ...)
+{
+  va_list arg;
+  va_start(arg, format);
+  char temp[64];
+  char *buffer = temp;
+  size_t len = vsnprintf(temp, sizeof(temp), format, arg);
+  va_end(arg);
+  if (len > sizeof(temp) - 1)
+  {
+    buffer = new char[len + 1];
+    if (!buffer)
+    {
+      return 0;
+    }
+    va_start(arg, format);
+    vsnprintf(buffer, len + 1, format, arg);
+    va_end(arg);
+  }
+  len = Serial.write((const uint8_t *)buffer, len);
+  logToDevices(buffer);
+  if (buffer != temp)
+  {
+    delete[] buffer;
+  }
+  return len;
 }
 
 bool Device::isMessageProper(DynamicJsonDocument &json)
@@ -386,10 +466,10 @@ void Device::updateUDP()
     packetSize = udp->parsePacket();
     if (packetSize)
     {
-      Serial.printf("Received %d bytes from %s, port %d\n", packetSize, udp->remoteIP().toString().c_str(), udp->remotePort());
+      logf("Received %d bytes from %s, port %d\n", packetSize, udp->remoteIP().toString().c_str(), udp->remotePort());
       if (packetSize > 2000)
       {
-        Serial.println("Too long message!");
+        log("Too long message!");
         return;
       }
       char *buffer = new char[packetSize + 1];
@@ -399,7 +479,7 @@ void Device::updateUDP()
         buffer[len] = '\0';
       }
 
-      Serial.printf("UDP packet contents: %s\n", buffer);
+      logf("UDP packet contents: %s\n", buffer);
 
       HClient client(-1);
       UdpSender udpSender;

@@ -55,6 +55,9 @@ public:
     void interpretMessage(HClient &client, Sender* sender, String message);
     void interpretMessage(HClient &client, Sender* sender, DynamicJsonDocument &json);
     void sendUdpPacket(const char* ip, int port, const char* message);
+    void log(const char* text);
+    size_t logf(const char *format, ...);
+    void logToDevices(const char *text);
 private:
     char *name;
     int port;

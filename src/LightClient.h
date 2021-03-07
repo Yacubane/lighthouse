@@ -4,22 +4,30 @@
 #include <Arduino.h>
 #include "LightDefines.h"
 
-#define READ_TIMEOUT 50
-
 class HClient
 {
 public:
     HClient(int socketId)
     {
         this->socketId = socketId;
+        this->logEnabled = false;
         this->authenticated = false;
         this->connected = false;
+    }
+
+    void setLogEnabled(bool logEnabled) {
+        this->logEnabled = logEnabled;
+    }
+
+    bool isLogEnabled() {
+        return this->logEnabled;
     }
 
     void setConnected()
     {
         this->keepalive();
         this->authenticated = false;
+        this->logEnabled = false;
         this->connected = true;
     }
 
@@ -74,4 +82,5 @@ private:
     unsigned int socketId;
     bool authenticated;
     unsigned long lastKeepalive;
+    bool logEnabled;
 };
