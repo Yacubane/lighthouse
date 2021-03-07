@@ -49,7 +49,7 @@ void Device::webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload,
   {
     IPAddress ip = this->webSocket->remoteIP(num);
     logf("[%u] Connected from %d.%d.%d.%d url: %s\n", num, ip[0],
-                  ip[1], ip[2], ip[3], payload);
+         ip[1], ip[2], ip[3], payload);
     if (!this->isFreeSpaceForNewClient())
     {
       clients[num].setConnected();
@@ -124,7 +124,7 @@ void Device::interpretMessage(HClient &client, Sender *sender, String message)
           else
           {
             logf("Error parsing JSON: %s\n",
-                          deserializationError.c_str());
+                 deserializationError.c_str());
           }
 
           break;
@@ -345,6 +345,9 @@ void Device::start()
 
   this->mainSender = new Sender(this->webSocket, clients);
   this->setupUDP();
+
+  this->diagnosticService = new DiagnosticService();
+  this->addService(diagnosticService);
 }
 
 Service *Device::findServiceWithId(String id)
@@ -402,7 +405,8 @@ void Device::logToDevices(const char *text)
       break;
     }
   }
-  if (!atLeastOneDeviceHasEnabledLogging) {
+  if (!atLeastOneDeviceHasEnabledLogging)
+  {
     return;
   }
   DynamicJsonDocument doc(SMALL_MESSAGE_JSON_SIZE);
@@ -485,7 +489,7 @@ void Device::updateUDP()
       UdpSender udpSender;
       Sender *tempSender = &udpSender;
       this->interpretMessage(client, &udpSender, String(buffer));
-      delete [] buffer;
+      delete[] buffer;
     }
   } while (packetSize > 0);
 }
@@ -508,6 +512,8 @@ void Device::update()
   {
     this->ensureHasWifi();
   }
+
+  diagnosticService->update();
 
   if (this->isUDPActive)
   {

@@ -19,11 +19,20 @@ public:
         this->setError("NoValue", "There is no value");
         this->readOnly = readOnly;
         this->onChangeHandler = nullptr;
+        this->watchable = true;
     }
 
     bool isReadOnly()
     {
         return this->readOnly;
+    }
+
+    bool isWatchable() {
+        return this->watchable;
+    }
+
+    void setWatchable(bool watchable) {
+        this->watchable = watchable;
     }
 
     bool isChanged()
@@ -133,6 +142,7 @@ private:
     std::vector<const char *> semanticTypes;
     void (*onChangeHandler)();
     bool readOnly;
+    bool watchable;
 };
 
 class BooleanProperty : public Property

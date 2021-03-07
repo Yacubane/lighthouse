@@ -6,7 +6,6 @@
 #include "LightProperty.h"
 #include "LightAction.h"
 #include "LightClient.h"
-#include "LightDevice.h"
 #include "LightSender.h"
 #include <WebSocketsServer.h>
 #include "LightDefines.h"
