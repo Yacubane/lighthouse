@@ -498,7 +498,11 @@ void Device::sendUdpPacket(const char *ip, int port, const char *message)
 {
   udp->beginPacket(ip, port);
   udp->write(message);
+  delay(1);
   udp->endPacket();
+  //yield();
+  delay(1);
+
 }
 
 void Device::update()
