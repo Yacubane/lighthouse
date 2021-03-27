@@ -118,10 +118,15 @@ public:
     }
 
     void onPropertySet() {
+        this->lastTimeSetMillis = millis();
         if (this->onPropertySetHandler != nullptr)
         {
             this->onPropertySetHandler();
         }
+    }
+
+    unsigned long getLastTimeSetMillis() {
+        return this->lastTimeSetMillis;
     }
 
     virtual String getType() = 0;
@@ -134,6 +139,7 @@ protected:
     char *errorMessage;
 
 private:
+    unsigned long lastTimeSetMillis = 0;
     const char *id;
     const char *description;
     bool changed;
