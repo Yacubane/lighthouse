@@ -18,7 +18,7 @@ public:
         this->errorMessage = nullptr;
         this->setError("NoValue", "There is no value");
         this->readOnly = readOnly;
-        this->onChangeHandler = nullptr;
+        this->onPropertySetHandler = nullptr;
         this->watchable = true;
     }
 
@@ -43,9 +43,6 @@ public:
     void setChanged(bool flag)
     {
         this->changed = flag;
-        if (this->changed) {
-            notifyChange();
-        }
     }
 
     const char *getId()
@@ -82,6 +79,7 @@ public:
         this->errorType[strlen(errorType)] = '\0';
         strncpy(this->errorMessage, errorMessage, strlen(errorMessage));
         this->errorMessage[strlen(errorMessage)] = '\0';
+        this->onPropertySet();
     }
 
     void unsetError()
@@ -91,6 +89,7 @@ public:
             this->setChanged(true);
         }
         this->error = false;
+        this->onPropertySet();
     }
 
     bool isError()
@@ -113,16 +112,15 @@ public:
         return this->semanticTypes;
     }
 
-    void setPropertyChangeListener(void (*onChangeHandler)())
+    void setOnPropertySetHandler(void (*onPropertySetHandler)())
     {
-        this->onChangeHandler = onChangeHandler;
+        this->onPropertySetHandler = onPropertySetHandler;
     }
 
-    void notifyChange()
-    {
-        if (this->onChangeHandler != nullptr)
+    void onPropertySet() {
+        if (this->onPropertySetHandler != nullptr)
         {
-            this->onChangeHandler();
+            this->onPropertySetHandler();
         }
     }
 
@@ -140,7 +138,7 @@ private:
     const char *description;
     bool changed;
     std::vector<const char *> semanticTypes;
-    void (*onChangeHandler)();
+    void (*onPropertySetHandler)();
     bool readOnly;
     bool watchable;
 };
@@ -158,6 +156,7 @@ public:
         }
         this->value = value;
         this->error = false;
+        this->onPropertySet();
     }
 
     bool setValue(JsonVariant jsonValue)
@@ -214,6 +213,7 @@ public:
         }
         this->value = value;
         this->error = false;
+        this->onPropertySet();
     }
 
     bool setValue(JsonVariant jsonValue)
@@ -270,6 +270,7 @@ public:
         }
         this->value = value;
         this->error = false;
+        this->onPropertySet();
     }
 
     bool setValue(JsonVariant jsonValue)
@@ -326,6 +327,7 @@ public:
         }
         this->value = value;
         this->error = false;
+        this->onPropertySet();
     }
 
     bool setValue(JsonVariant jsonValue)
