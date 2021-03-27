@@ -543,4 +543,5 @@ void Device::update()
       }
     }
   }
+  delay(500);
 }
