@@ -332,6 +332,16 @@ void Device::start()
     ArduinoOTA.setHostname(this->name);
     ArduinoOTA.setPassword(this->OTAPassword);
     ArduinoOTA.begin();
+
+    // This MDNS relies on ArduinoOTA, which handles begin and updating of MDNS
+    MDNSResponder::hMDNSService hService = MDNS.addService(0, "lighthouse", "tcp", this->port);
+    if (hService)
+    {
+      if ((!MDNS.addServiceTxt(hService, "type", "device")))
+      {
+        MDNS.removeService(hService);
+      }
+    }
   }
 
   this->webSocket = new WebSocketsServer(this->port);
@@ -502,7 +512,6 @@ void Device::sendUdpPacket(const char *ip, int port, const char *message)
   udp->endPacket();
   //yield();
   delay(1);
-
 }
 
 void Device::update()
@@ -524,7 +533,8 @@ void Device::update()
     this->updateUDP();
   }
 
-  for (int i = 0; i < 200; i++) {
+  for (int i = 0; i < 200; i++)
+  {
     this->webSocket->loop();
   }
   ServiceNode *serviceNode = this->serviceList;

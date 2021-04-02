@@ -4,6 +4,7 @@
 #include <ESP8266mDNS.h>
 #include <ArduinoOTA.h>
 #include <ESP8266WiFi.h>
+#include <ESP8266mDNS.h>
 #include <WiFiUdp.h>
 #include <ArduinoJson.h>
 #include "LightProperty.h"
@@ -61,7 +62,7 @@ public:
     void logToDevices(const char *text);
 private:
     char *name;
-    int port;
+    unsigned int port;
     unsigned long clientsCounter;
     ServiceNode *serviceList;
     WebSocketsServer *webSocket;
