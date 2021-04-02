@@ -524,7 +524,9 @@ void Device::update()
     this->updateUDP();
   }
 
-  this->webSocket->loop();
+  for (int i = 0; i < 200; i++) {
+    this->webSocket->loop();
+  }
   ServiceNode *serviceNode = this->serviceList;
   while (serviceNode->next != nullptr)
   {
@@ -543,5 +545,5 @@ void Device::update()
       }
     }
   }
-  delay(500);
+  //delay(500);
 }

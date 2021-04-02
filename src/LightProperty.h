@@ -16,9 +16,9 @@ public:
         this->error = true;
         this->errorType = nullptr;
         this->errorMessage = nullptr;
+        this->onPropertySetHandler = nullptr;
         this->setError("NoValue", "There is no value");
         this->readOnly = readOnly;
-        this->onPropertySetHandler = nullptr;
         this->watchable = true;
     }
 
