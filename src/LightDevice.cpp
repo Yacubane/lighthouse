@@ -248,8 +248,6 @@ void Device::interpretMessage(HClient &client, Sender *sender, DynamicJsonDocume
 
 void Device::ensureHasWifi()
 {
-  if (wifiStatusNotifier != nullptr)
-    wifiStatusNotifier(WiFi.status() == WL_CONNECTED ? WiFiStatus::CONNECTED : WiFiStatus::DISCONNECTED);
   if (WiFi.status() != WL_CONNECTED)
   {
     WiFi.disconnect();
