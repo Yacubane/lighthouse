@@ -433,36 +433,37 @@ void Device::logToDevices(const char *text)
 
 void Device::log(const char *text)
 {
-  Serial.println(text);
-  logToDevices(text);
+  //Serial.println(text);
+  //logToDevices(text);
 }
 
 size_t Device::logf(const char *format, ...)
 {
-  va_list arg;
-  va_start(arg, format);
-  char temp[64];
-  char *buffer = temp;
-  size_t len = vsnprintf(temp, sizeof(temp), format, arg);
-  va_end(arg);
-  if (len > sizeof(temp) - 1)
-  {
-    buffer = new char[len + 1];
-    if (!buffer)
-    {
-      return 0;
-    }
-    va_start(arg, format);
-    vsnprintf(buffer, len + 1, format, arg);
-    va_end(arg);
-  }
-  len = Serial.write((const uint8_t *)buffer, len);
-  logToDevices(buffer);
-  if (buffer != temp)
-  {
-    delete[] buffer;
-  }
-  return len;
+  // va_list arg;
+  // va_start(arg, format);
+  // char temp[64];
+  // char *buffer = temp;
+  // size_t len = vsnprintf(temp, sizeof(temp), format, arg);
+  // va_end(arg);
+  // if (len > sizeof(temp) - 1)
+  // {
+  //   buffer = new char[len + 1];
+  //   if (!buffer)
+  //   {
+  //     return 0;
+  //   }
+  //   va_start(arg, format);
+  //   vsnprintf(buffer, len + 1, format, arg);
+  //   va_end(arg);
+  // }
+  // len = Serial.write((const uint8_t *)buffer, len);
+  // logToDevices(buffer);
+  // if (buffer != temp)
+  // {
+  //   delete[] buffer;
+  // }
+  // return len;
+  return 0;
 }
 
 bool Device::isMessageProper(DynamicJsonDocument &json)
@@ -531,7 +532,7 @@ void Device::update()
     this->updateUDP();
   }
 
-  for (int i = 0; i < 200; i++)
+  for (int i = 0; i < 100; i++)
   {
     this->webSocket->loop();
   }
