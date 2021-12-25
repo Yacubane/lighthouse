@@ -219,10 +219,22 @@ void Device::interpretMessage(HClient &client, Sender *sender, DynamicJsonDocume
     }
     String serviceId = data["serviceId"];
     JsonObject messageToService = data["data"];
-    Service *service = findServiceWithId(serviceId);
-    if (service != nullptr)
+    if (serviceId.equals("*"))
     {
-      service->interpretMessage(client, sender, messageToService);
+      ServiceNode *serviceNode = this->serviceList;
+      while (serviceNode->next != nullptr)
+      {
+        serviceNode->service->interpretMessage(client, sender, messageToService);
+        serviceNode = serviceNode->next;
+      }
+    }
+    else
+    {
+      Service *service = findServiceWithId(serviceId);
+      if (service != nullptr)
+      {
+        service->interpretMessage(client, sender, messageToService);
+      }
     }
   }
   else if (messageType.equals("setupLogs"))
@@ -346,7 +358,8 @@ void Device::start()
   this->webSocket->begin();
 
   auto eventFunction = [&](uint8_t num, WStype_t type, uint8_t *payload,
-                           size_t length) {
+                           size_t length)
+  {
     this->webSocketEvent(num, type, payload, length);
   };
   this->webSocket->onEvent(eventFunction);
