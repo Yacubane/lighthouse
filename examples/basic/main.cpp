@@ -90,3 +90,10 @@ socket.addEventListener('message', function (event) {
     console.log('Message from server ', event.data);
 });
 */
+
+
+// { "messageType": "serviceInteraction", "data": { "serviceId" : "sms-sender", "data": { "messageType": "requestAction", "data": { "id": "sendSms", "requestId": "req", "data": { "phone": "781357450", "message": "test from browser"}}}}}
+
+
+// {"messageType":"serviceInteraction","data":{"serviceId":"sms-sender","data":{"messageType":"requestAction","data":{"id":"sendSms","requestId": "req","data":{ "phone": "781357450", "message": "test from browser"}}}}}
+// {"messageType":"serviceInteraction","data":{"serviceId":"sms-sender","data":{"messageType":"requestAction","data":{"id":"sendSms","requestId":"req","data":{"number":"781357450", "messsage":"test"}}}}}
