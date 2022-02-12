@@ -12,13 +12,11 @@ public:
     UdpSender() : Sender(){}
 
     void send(String text, HClient &client) override {
-        // Serial.print("UDP to client: ");
-        // Serial.println(text);
+        // fake interface used when interpreting UDP messages - no message will be send to other devices when using this type of communication
     }
 
     void sendAll(String text) override {
-        // Serial.print("UDP to all: ");
-        // Serial.println(text);
+        // fake interface used when interpreting UDP messages - no message will be send to other devices when using this type of communication
     }
 
     HClient *getClients()

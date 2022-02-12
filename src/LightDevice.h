@@ -1,10 +1,8 @@
 #pragma once
 
 #include <Arduino.h>
-#include <ESP8266mDNS.h>
+#include "LighthouseImports.h"
 #include <ArduinoOTA.h>
-#include <ESP8266WiFi.h>
-#include <ESP8266mDNS.h>
 #include <WiFiUdp.h>
 #include <ArduinoJson.h>
 #include "LightProperty.h"
@@ -38,9 +36,15 @@ public:
         CONNECTING,
         CONNECTING_ERROR
     };
-    Device(char *name, int port);
+    enum Logs
+    {
+        NONE,
+        SIMPLE,
+        DETAILED
+    };
+    Device(char const *name, int port);
 
-    void setWiFi(String ssid, String password);
+    void setWiFi(char const *ssid, char const *password);
     void setOTA(const char *password);
     void setUDPSupport(int port);
     void setWifiStatusNotifier(void (*wifiStatusHandler)(WiFiStatus status), int connectingPulseTime);
@@ -54,15 +58,15 @@ public:
         this->devicePassword = password;
     }
 
-    void interpretMessage(HClient &client, Sender* sender, String message);
-    void interpretMessage(HClient &client, Sender* sender, DynamicJsonDocument &json);
-    void sendUdpPacket(const char* ip, int port, const char* message);
-    void log(const char* text);
-    size_t logf(const char *format, ...);
-    void logToDevices(const char *text);
+    void setLogsMode(Logs logsMode)
+    {
+        this->logsMode = logsMode;
+    }
+
 private:
-    char *name;
+    char const *name;
     unsigned int port;
+    Logs logsMode;
     unsigned long clientsCounter;
     ServiceNode *serviceList;
     WebSocketsServer *webSocket;
@@ -73,9 +77,9 @@ private:
     WiFiUDP *udp;
     int udpPort;
 
-    DiagnosticService* diagnosticService;
-    String wifiSsid;
-    String wifiPassword;
+    DiagnosticService *diagnosticService;
+    char const *wifiSsid;
+    char const *wifiPassword;
     const char *OTAPassword;
     bool isOTAEnabled;
     bool isWifiSetupEnabled;
@@ -83,7 +87,7 @@ private:
     int wifiStatusConnectingPulseTime;
     void (*wifiStatusNotifier)(WiFiStatus status);
 
-    void sendSimpleMessage(Sender* sender, HClient &client, String type);
+    void sendSimpleMessage(Sender *sender, HClient &client, String type);
     bool isFreeSpaceForNewClient();
     bool isMessageProper(DynamicJsonDocument &json);
     Action *findActionWithName(String name);
@@ -94,4 +98,11 @@ private:
     void ensureHasWifi();
     void setupUDP();
     void updateUDP();
+    void interpretMessage(HClient &client, Sender *sender, String message);
+    void interpretMessage(HClient &client, Sender *sender, DynamicJsonDocument &json);
+    void sendUdpPacket(const char *ip, int port, const char *message);
+    void log(Logs logMode, const char *text, bool printNewLine = true);
+    size_t logf(Logs logMode, const char *format, ...);
+    void logToDevices(const char *text);
+    bool shouldLog(Logs logMode);
 };

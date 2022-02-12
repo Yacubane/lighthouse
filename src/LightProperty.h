@@ -2,12 +2,13 @@
 
 #include <Arduino.h>
 #include <ArduinoJson.h>
+#include <vector>
 #include "LightDefines.h"
 
 class Property
 {
 public:
-    Property(const char *id, std::vector<const char *> semanticTypes, const char *description, bool readOnly = true)
+    Property(const char *id, std::vector<const char *> semanticTypes, const char *description, bool readOnly = true, bool informOnChange = true)
     {
         this->id = id;
         this->changed = false;
@@ -19,7 +20,7 @@ public:
         this->onPropertySetHandler = nullptr;
         this->setError("NoValue", "There is no value");
         this->readOnly = readOnly;
-        this->watchable = true;
+        this->informOnChange = informOnChange;
     }
 
     bool isReadOnly()
@@ -27,12 +28,12 @@ public:
         return this->readOnly;
     }
 
-    bool isWatchable() {
-        return this->watchable;
+    bool isInformOnChange() {
+        return this->informOnChange;
     }
 
-    void setWatchable(bool watchable) {
-        this->watchable = watchable;
+    void setInformOnChange(bool informOnChange) {
+        this->informOnChange = informOnChange;
     }
 
     bool isChanged()
@@ -146,13 +147,13 @@ private:
     std::vector<const char *> semanticTypes;
     void (*onPropertySetHandler)();
     bool readOnly;
-    bool watchable;
+    bool informOnChange;
 };
 
 class BooleanProperty : public Property
 {
 public:
-    BooleanProperty(const char *id, std::vector<const char *> semanticTypes, const char *description, bool isReadOnly = true) : Property(id, semanticTypes, description, isReadOnly) {}
+    BooleanProperty(const char *id, std::vector<const char *> semanticTypes, const char *description, bool isReadOnly = true, bool informOnChange = true) : Property(id, semanticTypes, description, isReadOnly, informOnChange) {}
 
     void setValue(bool value)
     {
@@ -209,7 +210,7 @@ private:
 class IntegerProperty : public Property
 {
 public:
-    IntegerProperty(const char *id, std::vector<const char *> semanticTypes, const char *description, bool isReadOnly = true) : Property(id, semanticTypes, description, isReadOnly) {}
+    IntegerProperty(const char *id, std::vector<const char *> semanticTypes, const char *description, bool isReadOnly = true, bool informOnChange = true) : Property(id, semanticTypes, description, isReadOnly, informOnChange) {}
 
     void setValue(int32_t value)
     {
@@ -266,7 +267,7 @@ private:
 class StringProperty : public Property
 {
 public:
-    StringProperty(const char *id, std::vector<const char *> semanticTypes, const char *description, bool isReadOnly = true) : Property(id, semanticTypes, description, isReadOnly) {}
+    StringProperty(const char *id, std::vector<const char *> semanticTypes, const char *description, bool isReadOnly = true, bool informOnChange = true) : Property(id, semanticTypes, description, isReadOnly, informOnChange) {}
 
     void setValue(String value)
     {
@@ -323,7 +324,7 @@ private:
 class NumberProperty : public Property
 {
 public:
-    NumberProperty(const char *id, std::vector<const char *> semanticTypes, const char *description, bool isReadOnly = true) : Property(id, semanticTypes, description, isReadOnly) {}
+    NumberProperty(const char *id, std::vector<const char *> semanticTypes, const char *description, bool isReadOnly = true, bool informOnChange = true) : Property(id, semanticTypes, description, isReadOnly, informOnChange) {}
 
     void setValue(double value)
     {

@@ -208,7 +208,7 @@ void Service::update(Sender *sender)
     PropertyNode *propertyNode = this->propertyList;
     while (propertyNode->next != nullptr)
     {
-        if (propertyNode->property->isChanged() && propertyNode->property->isWatchable())
+        if (propertyNode->property->isChanged() && propertyNode->property->isInformOnChange())
         {
             propertyNode->property->setChanged(false);
             DynamicJsonDocument doc = this->prepareMessage(PROPERTY_STATUS_JSON_SIZE, "propertyStatus");

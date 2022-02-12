@@ -1,7 +1,7 @@
 #pragma once
-#include <ESP8266WiFi.h>
-#include <ArduinoJson.h>
 #include <Arduino.h>
+#include "LighthouseImports.h"
+#include <ArduinoJson.h>
 #include "LightDefines.h"
 
 class HClient

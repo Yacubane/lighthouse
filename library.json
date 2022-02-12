@@ -1,6 +1,6 @@
 {
     "name": "Lighthouse",
-    "description": "Lighthouse is a IoT library for ESP8266",
+    "description": "Lighthouse is a IoT library for ESP8266 and ESP32",
     "keywords": "wifi, websocket, iot",
     "authors": [
         {

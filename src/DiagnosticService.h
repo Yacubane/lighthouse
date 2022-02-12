@@ -1,51 +1,32 @@
 #pragma once
-#include <ESP8266WiFi.h>
-#include <ArduinoJson.h>
 #include <Arduino.h>
+#include "LighthouseImports.h"
+#include <ArduinoJson.h>
 #include "LightService.h"
 #include "LightProperty.h"
 
+
+#if defined(ESP8266)
 class DiagnosticService : public Service
 {
 public:
     DiagnosticService() : Service("diagnostic-service", {"DiagnosticService"}, ""),
-                          mac("mac", {}, ""),
-                          fullVersion("fullVersion", {}, ""),
-                          sdkVersion("sdkVersion", {}, ""),
-                          sketchSize("sketchSize", {}, ""),
-                          freeSketchSpace("freeSketchSpace", {}, ""),
-                          sketchMD5("sketchMD5", {}, ""),
-                          chipId("chipId", {}, ""),
-                          coreVersion("coreVersion", {}, ""),
-                          bootMode("bootMode", {}, ""),
-                          bootVersion("bootVersion", {}, ""),
-                          rssi("RSSI", {}, ""),
-                          vcc("vcc", {}, ""),
-                          bssid("BSSID", {}, ""),
-                          ssid("SSID", {}, ""),
-                          cycleCount("cycleCount", {}, ""),
-                          freeHeap("freeHeap", {}, ""),
-                          millisProperty("millis", {}, "")
+                          mac("mac", {}, "", true, false),
+                          fullVersion("fullVersion", {}, "", true, false),
+                          sdkVersion("sdkVersion", {}, "", true, false),
+                          sketchSize("sketchSize", {}, "", true, false),
+                          freeSketchSpace("freeSketchSpace", {}, "", true, false),
+                          sketchMD5("sketchMD5", {}, "", true, false),
+                          chipId("chipId", {}, "", true, false),
+                          coreVersion("coreVersion", {}, "", true, false),
+                          bootMode("bootMode", {}, "", true, false),
+                          bootVersion("bootVersion", {}, "", true, false),
+                          rssi("RSSI", {}, "", true, false),
+                          vcc("vcc", {}, "", true, false),
+                          cycleCount("cycleCount", {}, "", true, false),
+                          freeHeap("freeHeap", {}, "", true, false),
+                          millisProperty("millis", {}, "", true, false)
     {
-        mac.setWatchable(false);
-        fullVersion.setWatchable(false);
-        sdkVersion.setWatchable(false);
-        sketchSize.setWatchable(false);
-        freeSketchSpace.setWatchable(false);
-        sketchMD5.setWatchable(false);
-        chipId.setWatchable(false);
-        coreVersion.setWatchable(false);
-        bootMode.setWatchable(false);
-        bootVersion.setWatchable(false);
-        rssi.setWatchable(false);
-        vcc.setWatchable(false);
-        bssid.setWatchable(false);
-        rssi.setWatchable(false);
-        ssid.setWatchable(false);
-        cycleCount.setWatchable(false);
-        freeHeap.setWatchable(false);
-        millisProperty.setWatchable(false);
-
         this->mac.setValue(WiFi.macAddress());
         this->fullVersion.setValue(ESP.getFullVersion());
         this->sdkVersion.setValue(ESP.getSdkVersion());
@@ -69,8 +50,6 @@ public:
         this->addProperty(bootVersion);
         this->addProperty(rssi);
         this->addProperty(vcc);
-        this->addProperty(bssid);
-        this->addProperty(ssid);
         this->addProperty(cycleCount);
         this->addProperty(freeHeap);
         this->addProperty(millisProperty);
@@ -80,8 +59,6 @@ public:
     {
         this->rssi.setValue(WiFi.RSSI());
         this->vcc.setValue(ESP.getVcc());
-        this->bssid.setValue(WiFi.BSSIDstr());
-        this->ssid.setValue(WiFi.SSID());
         this->cycleCount.setValue(ESP.getCycleCount());
         this->freeHeap.setValue(ESP.getFreeHeap());
         this->millisProperty.setValue(millis());
@@ -100,9 +77,55 @@ private:
     IntegerProperty bootVersion;
     IntegerProperty rssi;
     IntegerProperty vcc;
-    StringProperty bssid;
-    StringProperty ssid;
     IntegerProperty cycleCount;
     IntegerProperty freeHeap;
     IntegerProperty millisProperty;
 };
+#elif defined(ESP32)
+class DiagnosticService : public Service
+{
+public:
+    DiagnosticService() : Service("diagnostic-service", {"DiagnosticService"}, ""),
+                          mac("mac", {}, "", true, false),
+                          sdkVersion("sdkVersion", {}, "", true, false),
+                          sketchSize("sketchSize", {}, "", true, false),
+                          freeSketchSpace("freeSketchSpace", {}, "", true, false),
+                          sketchMD5("sketchMD5", {}, "", true, false),
+                          cycleCount("cycleCount", {}, "", true, false),
+                          freeHeap("freeHeap", {}, "", true, false),
+                          millisProperty("millis", {}, "", true, false)
+    {
+        this->mac.setValue(WiFi.macAddress());
+        this->sdkVersion.setValue(ESP.getSdkVersion());
+        this->sketchSize.setValue(ESP.getSketchSize());
+        this->freeSketchSpace.setValue(ESP.getFreeSketchSpace());
+        this->sketchMD5.setValue(ESP.getSketchMD5());
+
+        this->addProperty(mac);
+        this->addProperty(sdkVersion);
+        this->addProperty(sketchSize);
+        this->addProperty(freeSketchSpace);
+        this->addProperty(sketchMD5);
+        this->addProperty(cycleCount);
+        this->addProperty(freeHeap);
+        this->addProperty(millisProperty);
+    }
+
+    void update()
+    {
+        this->cycleCount.setValue(ESP.getCycleCount());
+        this->freeHeap.setValue(ESP.getFreeHeap());
+        this->millisProperty.setValue(millis());
+    }
+
+private:
+    StringProperty mac;
+    StringProperty sdkVersion;
+    IntegerProperty sketchSize;
+    IntegerProperty freeSketchSpace;
+    StringProperty sketchMD5;
+    IntegerProperty cycleCount;
+    IntegerProperty freeHeap;
+    IntegerProperty millisProperty;
+};
+#endif

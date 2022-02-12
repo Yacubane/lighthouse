@@ -1,9 +1,8 @@
 #include <Arduino.h>
-#include <ESP8266WiFi.h>
 #include "Lighthouse.h"
 
-// Change these values
-#define WIFI_SSID "TV_ROOM_2.4G"
+// Provide WiFi credentials for ESP
+#define WIFI_SSID "..."
 #define WIFI_PASSWORD "..."
 
 Device thing("home-device", 8123);
@@ -41,11 +40,12 @@ void toggleLightHandler(ActionStatus *actionStatus, JsonVariant data)
 
 void setup()
 {
-    Serial.begin(9600);
+    Serial.begin(115200);
 
     thing.setWiFi(WIFI_SSID, WIFI_PASSWORD);
     thing.setOTA("123456");
     thing.setPassword("123456");
+    // thing.setLogsMode(Device::Logs::DETAILED); // by default SIMPLE logs are enabled (prints MAC, IP and WiFi status)
 
     gateWicketService.addAction("toggle", {"Toggle"}, "Toggle wicket gate action", toggleWicketGateHandler);
     thing.addService(&gateWicketService);
@@ -80,20 +80,20 @@ void loop()
 
 // Example API usage:
 /*
-var socket = new WebSocket('ws://192.168.100.21:8123');
+var socket = new WebSocket('ws://X.X.X.X:8123'); // put IP of ESP module
 
 socket.addEventListener('open', function (event) {
-    socket.send('{ "messageType": "authenticate", "data": {"password": "123456"}} { "messageType": "ping" } { "messageType": "describe" } { "messageType": "serviceInteraction", "data": { "serviceId" : "gate", "data": { "messageType": "readAllProperties"}}} { "messageType": "serviceInteraction", "data": { "serviceId" : "gate", "data": { "messageType": "requestAction", "data": { "id": "toggle", "requestId": "req", "data": { "arg": "example"}}}}} { "messageType": "keepalive" }');
+    socket.send(
+        '{ "messageType": "authenticate", "data": {"password": "123456"}}' +
+        '{ "messageType": "ping" }' +
+        '{ "messageType": "describe" }' +
+        '{ "messageType": "serviceInteraction", "data": { "serviceId" : "gate", "data": { "messageType": "readAllProperties"}}}' +
+        '{ "messageType": "serviceInteraction", "data": { "serviceId" : "gate", "data": { "messageType": "requestAction", "data": { "id": "toggle", "requestId": "req", "data": { "arg": "example"}}}}}' +
+        '{ "messageType": "keepalive" }'
+    );
 });
 
 socket.addEventListener('message', function (event) {
     console.log('Message from server ', event.data);
 });
 */
-
-
-// { "messageType": "serviceInteraction", "data": { "serviceId" : "sms-sender", "data": { "messageType": "requestAction", "data": { "id": "sendSms", "requestId": "req", "data": { "phone": "781357450", "message": "test from browser"}}}}}
-
-
-// {"messageType":"serviceInteraction","data":{"serviceId":"sms-sender","data":{"messageType":"requestAction","data":{"id":"sendSms","requestId": "req","data":{ "phone": "781357450", "message": "test from browser"}}}}}
-// {"messageType":"serviceInteraction","data":{"serviceId":"sms-sender","data":{"messageType":"requestAction","data":{"id":"sendSms","requestId":"req","data":{"number":"781357450", "messsage":"test"}}}}}
