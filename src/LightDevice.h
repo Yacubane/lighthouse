@@ -50,7 +50,10 @@ public:
     void setWifiStatusNotifier(void (*wifiStatusHandler)(WiFiStatus status), int connectingPulseTime);
     void update();
     void start();
-
+    void sendUdpPacket(const char *ip, int port, const char *message);
+    void log(Logs logMode, const char *text, bool printNewLine = true);
+    size_t logf(Logs logMode, const char *format, ...);
+    
     void addService(Service *service);
 
     void setPassword(String password)
@@ -100,9 +103,6 @@ private:
     void updateUDP();
     void interpretMessage(HClient &client, Sender *sender, String message);
     void interpretMessage(HClient &client, Sender *sender, DynamicJsonDocument &json);
-    void sendUdpPacket(const char *ip, int port, const char *message);
-    void log(Logs logMode, const char *text, bool printNewLine = true);
-    size_t logf(Logs logMode, const char *format, ...);
     void logToDevices(const char *text);
     bool shouldLog(Logs logMode);
 };
