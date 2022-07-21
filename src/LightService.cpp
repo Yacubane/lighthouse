@@ -260,10 +260,11 @@ void Service::update(Sender *sender)
                 prevActionStatusNode->next = actionStatusNode->next;
                 delete actionStatusNode->actionStatus;
                 delete actionStatusNode;
+                actionStatusNode = prevActionStatusNode->next;
+            } else {
+                prevActionStatusNode = actionStatusNode;
+                actionStatusNode = actionStatusNode->next;
             }
-
-            prevActionStatusNode = actionStatusNode;
-            actionStatusNode = actionStatusNode->next;
         }
         actionNode = actionNode->next;
     }

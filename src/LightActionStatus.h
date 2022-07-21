@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include "LightProperty.h"
 #include "LightDefines.h"
+#include "LightClient.h"
 
 class ActionStatus
 {
@@ -15,12 +16,16 @@ public:
         COMPLETED
     };
 
-    ActionStatus(String id, String actionId, String requestId, String clientId, Status status, String message, String userMessage)
+    ActionStatus(String id, String actionId, String requestId, HClient* client, Status status, String message, String userMessage)
     {
         this->id = id;
         this->actionId = actionId;
         this->requestId = requestId;
-        this->clientId = clientId;
+        this->client = client;
+        // After client disconnection client reference can be changed to another
+        // with different clientId (incremented for every new client) so it must be stored
+        // to be able to differentiate these clients
+        this->clientId = client->getId();
         this->status = status;
         this->message = message;
         this->userMessage = userMessage;
@@ -45,6 +50,11 @@ public:
     String getClientId()
     {
         return this->clientId;
+    }
+
+    HClient* getClient()
+    {
+        return this->client;
     }
 
     Status getStatus()
@@ -83,6 +93,7 @@ public:
 private:
     String id;
     String actionId;
+    HClient* client;
     String clientId;
     String requestId;
     Status status;

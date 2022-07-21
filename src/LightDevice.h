@@ -11,7 +11,7 @@
 #include "LightService.h"
 #include "LightSender.h"
 #include "LightUDPSender.h"
-#include <WebSocketsServer.h>
+#include "CustomWebSocketsServer.h"
 #include "LightDefines.h"
 #include "DiagnosticService.h"
 
@@ -53,7 +53,7 @@ public:
     void sendUdpPacket(const char *ip, int port, const char *message);
     void log(Logs logMode, const char *text, bool printNewLine = true);
     size_t logf(Logs logMode, const char *format, ...);
-    
+
     void addService(Service *service);
 
     void setPassword(String password)
@@ -66,13 +66,23 @@ public:
         this->logsMode = logsMode;
     }
 
+    DynamicJsonDocument prepareMessage(int capacity, String type);
+    Sender *getSender()
+    {
+        return this->mainSender;
+    }
+    HClient *getClients()
+    {
+        return clients;
+    }
+
 private:
     char const *name;
     unsigned int port;
     Logs logsMode;
     unsigned long clientsCounter;
     ServiceNode *serviceList;
-    WebSocketsServer *webSocket;
+    CustomWebSocketsServer *webSocket;
     HClient clients[5] = {{0}, {1}, {2}, {3}, {4}};
     String fragmentBuffer[5];
     String devicePassword = "";
@@ -95,7 +105,6 @@ private:
     bool isMessageProper(DynamicJsonDocument &json);
     Action *findActionWithName(String name);
     void broadcastText(String text);
-    DynamicJsonDocument prepareMessage(int capacity, String type);
     void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length);
     Service *findServiceWithId(String id);
     void ensureHasWifi();

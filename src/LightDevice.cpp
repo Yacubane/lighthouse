@@ -273,7 +273,7 @@ void Device::ensureHasWifi()
         if (wifiStatusNotifier != nullptr)
           wifiStatusNotifier(WiFiStatus::CONNECTING_ERROR);
         log(Logs::SIMPLE, "Cannot connect to WiFi, restarting ESP");
-        ESP.restart();
+        __builtin_trap();
       }
       WiFi.begin(this->wifiSsid, this->wifiPassword);
 
@@ -349,7 +349,7 @@ void Device::start()
     ArduinoOTA.begin();
   }
 
-  this->webSocket = new WebSocketsServer(this->port);
+  this->webSocket = new CustomWebSocketsServer(this->port);
   this->webSocket->begin();
 
   auto eventFunction = [&](uint8_t num, WStype_t type, uint8_t *payload,
