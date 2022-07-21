@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
-#include <WebSocketsServer.h>
+#include "CustomWebSocketsServer.h"
 #include "LightClient.h"
 #include "LightDefines.h"
 
@@ -12,7 +12,7 @@ class Sender
 public:
     Sender(){}
 
-    Sender(WebSocketsServer *webSocket, HClient *clients)
+    Sender(CustomWebSocketsServer *webSocket, HClient *clients)
     {
         this->webSocket = webSocket;
         this->clients = clients;
@@ -21,6 +21,11 @@ public:
     virtual void send(String text, HClient &client)
     {
         this->webSocket->sendTXT(client.getSocketId(), text);
+    }
+
+    virtual void send(HClient *client, WSopcode_t opcode, uint8_t * payload, size_t length, bool fin, bool headerToPayload)
+    {
+        this->webSocket->sendFrame(client->getSocketId(), opcode, payload, length, fin, headerToPayload);   
     }
 
     virtual void sendAll(String text)
@@ -40,6 +45,6 @@ public:
     }
 
 private:
-    WebSocketsServer *webSocket;
+    CustomWebSocketsServer *webSocket;
     HClient *clients;
 };

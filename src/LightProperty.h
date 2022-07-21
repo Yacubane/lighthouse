@@ -28,11 +28,13 @@ public:
         return this->readOnly;
     }
 
-    bool isInformOnChange() {
+    bool isInformOnChange()
+    {
         return this->informOnChange;
     }
 
-    void setInformOnChange(bool informOnChange) {
+    void setInformOnChange(bool informOnChange)
+    {
         this->informOnChange = informOnChange;
     }
 
@@ -118,7 +120,8 @@ public:
         this->onPropertySetHandler = onPropertySetHandler;
     }
 
-    void onPropertySet() {
+    void onPropertySet()
+    {
         this->lastTimeSetMillis = millis();
         if (this->onPropertySetHandler != nullptr)
         {
@@ -126,7 +129,8 @@ public:
         }
     }
 
-    unsigned long getLastTimeSetMillis() {
+    unsigned long getLastTimeSetMillis()
+    {
         return this->lastTimeSetMillis;
     }
 
@@ -150,13 +154,18 @@ private:
     bool informOnChange;
 };
 
-class BooleanProperty : public Property
+template <typename U, typename V, char const *type>
+class TemplatedProperty : public Property
 {
-public:
-    BooleanProperty(const char *id, std::vector<const char *> semanticTypes, const char *description, bool isReadOnly = true, bool informOnChange = true) : Property(id, semanticTypes, description, isReadOnly, informOnChange) {}
+    using Property::Property;
 
-    void setValue(bool value)
+public:
+    void setValue(U value)
     {
+        if (!isValueValid(value)) {
+            setError("WrongValue", "Value is not valid (it can be for example empty)");
+            return;
+        }
         if (this->value != value)
         {
             this->setChanged(true);
@@ -168,23 +177,27 @@ public:
 
     bool setValue(JsonVariant jsonValue)
     {
-        if (jsonValue.isNull() || !jsonValue.is<bool>())
+        if (jsonValue.isNull() || !jsonValue.is<V>())
         {
             return false;
         }
-        bool value = jsonValue.as<bool>();
+        U value = jsonValue.as<V>();
         this->setValue(value);
         return true;
     }
 
-    bool getValue()
+    U getValue()
     {
+        if (onGetValueHandler != nullptr)
+        {
+            return onGetValueHandler();
+        }
         return value;
     }
 
     String getType()
     {
-        return "boolean";
+        return type;
     }
 
     void addToJson(JsonObject jsonObject)
@@ -203,177 +216,56 @@ public:
         }
     }
 
-private:
-    bool value;
+    void setOnGetValueHandler(U (*onGetValueHandler)())
+    {
+        this->onGetValueHandler = onGetValueHandler;
+        this->unsetError();
+    }
+
+    virtual bool isValueValid(U value) {
+        return true;
+    }
+
+    private:
+        U (*onGetValueHandler)() = nullptr;
+        U value;
+
 };
 
-class IntegerProperty : public Property
+static const char BooleanPropertyType[] = "boolean";
+class BooleanProperty : public TemplatedProperty<bool, bool, BooleanPropertyType>
 {
-public:
-    IntegerProperty(const char *id, std::vector<const char *> semanticTypes, const char *description, bool isReadOnly = true, bool informOnChange = true) : Property(id, semanticTypes, description, isReadOnly, informOnChange) {}
-
-    void setValue(int32_t value)
-    {
-        if (this->value != value)
-        {
-            this->setChanged(true);
-        }
-        this->value = value;
-        this->error = false;
-        this->onPropertySet();
-    }
-
-    bool setValue(JsonVariant jsonValue)
-    {
-        if (jsonValue.isNull() || !jsonValue.is<int>())
-        {
-            return false;
-        }
-        int value = jsonValue.as<int>();
-        this->setValue(value);
-        return true;
-    }
-
-    int32_t getValue()
-    {
-        return value;
-    }
-
-    String getType()
-    {
-        return "integer";
-    }
-
-    void addToJson(JsonObject jsonObject)
-    {
-        jsonObject["id"] = this->getId();
-        jsonObject["error"] = this->error;
-        if (this->error)
-        {
-            jsonObject["value"] = nullptr;
-            jsonObject["errorType"] = this->errorType;
-            jsonObject["errorMessage"] = this->errorMessage;
-        }
-        else
-        {
-            jsonObject["value"] = this->getValue();
-        }
-    }
-
-private:
-    int32_t value;
+    using TemplatedProperty::TemplatedProperty;
 };
 
-class StringProperty : public Property
+static const char IntegerPropertyType[] = "integer";
+class IntegerProperty : public TemplatedProperty<int64_t, int64_t, IntegerPropertyType>
 {
-public:
-    StringProperty(const char *id, std::vector<const char *> semanticTypes, const char *description, bool isReadOnly = true, bool informOnChange = true) : Property(id, semanticTypes, description, isReadOnly, informOnChange) {}
-
-    void setValue(String value)
-    {
-        if (!value.equals(this->value))
-        {
-            this->setChanged(true);
-        }
-        this->value = value;
-        this->error = false;
-        this->onPropertySet();
-    }
-
-    bool setValue(JsonVariant jsonValue)
-    {
-        if (jsonValue.isNull() || !jsonValue.is<const char *>())
-        {
+    using TemplatedProperty::TemplatedProperty;
+    public:
+    bool isValueValid(int64_t value) override {
+        if (isnan(value)) {
             return false;
         }
-        const char *value = jsonValue.as<const char *>();
-        this->setValue(value);
         return true;
     }
-
-    String getValue()
-    {
-        return value;
-    }
-
-    String getType()
-    {
-        return "string";
-    }
-
-    void addToJson(JsonObject jsonObject)
-    {
-        jsonObject["id"] = this->getId();
-        jsonObject["error"] = this->error;
-        if (this->error)
-        {
-            jsonObject["value"] = nullptr;
-            jsonObject["errorType"] = this->errorType;
-            jsonObject["errorMessage"] = this->errorMessage;
-        }
-        else
-        {
-            jsonObject["value"] = this->getValue();
-        }
-    }
-
-private:
-    String value;
 };
 
-class NumberProperty : public Property
+static const char StringPropertyType[] = "string";
+class StringProperty : public TemplatedProperty<String, const char *, StringPropertyType>
 {
-public:
-    NumberProperty(const char *id, std::vector<const char *> semanticTypes, const char *description, bool isReadOnly = true, bool informOnChange = true) : Property(id, semanticTypes, description, isReadOnly, informOnChange) {}
+    using TemplatedProperty::TemplatedProperty;
+};
 
-    void setValue(double value)
-    {
-        if (this->value != value)
-        {
-            this->setChanged(true);
-        }
-        this->value = value;
-        this->error = false;
-        this->onPropertySet();
-    }
-
-    bool setValue(JsonVariant jsonValue)
-    {
-        if (jsonValue.isNull() || !jsonValue.is<double>())
-        {
+static const char NumberPropertyType[] = "number";
+class NumberProperty : public TemplatedProperty<double, double, NumberPropertyType>
+{
+    using TemplatedProperty::TemplatedProperty;
+    public:
+    bool isValueValid(double value) override {
+        if (isnan(value)) {
             return false;
         }
-        double value = jsonValue.as<double>();
-        this->setValue(value);
         return true;
     }
-
-    double getValue()
-    {
-        return value;
-    }
-
-    String getType()
-    {
-        return "number";
-    }
-
-    void addToJson(JsonObject jsonObject)
-    {
-        jsonObject["id"] = this->getId();
-        jsonObject["error"] = this->error;
-        if (this->error)
-        {
-            jsonObject["value"] = nullptr;
-            jsonObject["errorType"] = this->errorType;
-            jsonObject["errorMessage"] = this->errorMessage;
-        }
-        else
-        {
-            jsonObject["value"] = this->getValue();
-        }
-    }
-
-private:
-    double value;
 };
