@@ -361,9 +361,6 @@ void Device::start()
 
   this->mainSender = new Sender(this->webSocket, clients);
   this->setupUDP();
-
-  this->diagnosticService = new DiagnosticService();
-  this->addService(diagnosticService);
 }
 
 Service *Device::findServiceWithId(String id)
@@ -564,8 +561,6 @@ void Device::update()
   {
     this->ensureHasWifi();
   }
-
-  diagnosticService->update();
 
   if (this->isUDPActive)
   {

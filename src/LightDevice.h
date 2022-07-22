@@ -13,7 +13,6 @@
 #include "LightUDPSender.h"
 #include "CustomWebSocketsServer.h"
 #include "LightDefines.h"
-#include "DiagnosticService.h"
 
 #define MAX_CLIENTS 5
 #define WIFI_CONNECTING_MAX_TIME 20000 // 20000ms = 20s
@@ -90,7 +89,6 @@ private:
     WiFiUDP *udp;
     int udpPort;
 
-    DiagnosticService *diagnosticService;
     char const *wifiSsid;
     char const *wifiPassword;
     const char *OTAPassword;

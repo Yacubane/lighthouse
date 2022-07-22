@@ -99,7 +99,7 @@ void Service::interpretMessage(HClient &client, Sender *sender, JsonObject &json
         }
 
         JsonVariant actionParameters = data["data"];
-        ActionStatus *actionStatus = action->invokeAction(client, data["requestId"], actionParameters);
+        ActionStatus *actionStatus = action->invokeAction(client, sender, data["requestId"], actionParameters);
         update(sender);
         action->getHandler()(actionStatus, actionParameters);
         update(sender);
@@ -133,6 +133,31 @@ void Service::interpretMessage(HClient &client, Sender *sender, JsonObject &json
         {
             property->setValue(propertyData);
         }
+    }
+    else if (messageType.equals("readProperty"))
+    {
+
+        if (!json.containsKey("data"))
+        {
+            return;
+        }
+        JsonObject idData = json["data"];
+        if (!idData.containsKey("id"))
+        {
+            return;
+        }
+        String propertyId = idData["id"];
+        Property *property = findPropertyWithId(propertyId);
+        if (property == nullptr || property->isReadOnly())
+        {
+            return;
+        }
+        DynamicJsonDocument doc = this->prepareMessage(PROPERTY_STATUS_JSON_SIZE, "propertyStatus");
+        JsonObject data = doc["data"]["data"].createNestedObject("data");
+        property->addToJson(data);
+        String output;
+        serializeJson(doc, output);
+        sender->send(output, client);
     }
     else if (messageType.equals("readAllProperties"))
     {

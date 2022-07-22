@@ -4,6 +4,7 @@
 #include "LightProperty.h"
 #include "LightDefines.h"
 #include "LightClient.h"
+#include "LightSender.h"
 
 class ActionStatus
 {
@@ -16,12 +17,13 @@ public:
         COMPLETED
     };
 
-    ActionStatus(String id, String actionId, String requestId, HClient* client, Status status, String message, String userMessage)
+    ActionStatus(String id, String actionId, String requestId, HClient *client, Sender *sender, Status status, String message, String userMessage)
     {
         this->id = id;
         this->actionId = actionId;
         this->requestId = requestId;
         this->client = client;
+        this->sender = sender;
         // After client disconnection client reference can be changed to another
         // with different clientId (incremented for every new client) so it must be stored
         // to be able to differentiate these clients
@@ -52,9 +54,14 @@ public:
         return this->clientId;
     }
 
-    HClient* getClient()
+    HClient *getClient()
     {
         return this->client;
+    }
+
+    Sender *getSender()
+    {
+        return this->sender;
     }
 
     Status getStatus()
@@ -93,7 +100,8 @@ public:
 private:
     String id;
     String actionId;
-    HClient* client;
+    HClient *client;
+    Sender *sender;
     String clientId;
     String requestId;
     Status status;

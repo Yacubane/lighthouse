@@ -212,9 +212,10 @@ public:
         }
     }
 
-    void setOnGetValueHandler(void (*onGetValueHandler)())
+    void setOnGetValueHandler(U (*onGetValueHandler)())
     {
         this->onGetValueHandler = onGetValueHandler;
+        this->unsetError();
     }
 
     private:
