@@ -157,9 +157,11 @@ private:
 template <typename U, typename V, char const *type>
 class TemplatedProperty : public Property
 {
-    using Property::Property;
-
 public:
+    TemplatedProperty(const char *id, std::vector<const char *> semanticTypes, const char *description, bool readOnly = true, bool informOnChange = true) 
+     : Property(id, semanticTypes, description, readOnly, informOnChange){
+        this->onGetValueHandler = nullptr;
+    }
     void setValue(U value)
     {
         if (this->value != value)
@@ -219,7 +221,7 @@ public:
     }
 
     private:
-        U (*onGetValueHandler)() = nullptr;
+        U (*onGetValueHandler)();
         U value;
 
 };
