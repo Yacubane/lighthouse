@@ -157,13 +157,15 @@ private:
 template <typename U, typename V, char const *type>
 class TemplatedProperty : public Property
 {
+    using Property::Property;
+
 public:
-    TemplatedProperty(const char *id, std::vector<const char *> semanticTypes, const char *description, bool readOnly = true, bool informOnChange = true) 
-     : Property(id, semanticTypes, description, readOnly, informOnChange){
-        this->onGetValueHandler = nullptr;
-    }
     void setValue(U value)
     {
+        if (!isValueValid(value)) {
+            setError("WrongValue", "Value is not valid (it can be for example empty)");
+            return;
+        }
         if (this->value != value)
         {
             this->setChanged(true);
@@ -220,8 +222,12 @@ public:
         this->unsetError();
     }
 
+    virtual bool isValueValid(U value) {
+        return true;
+    }
+
     private:
-        U (*onGetValueHandler)();
+        U (*onGetValueHandler)() = nullptr;
         U value;
 
 };
@@ -236,6 +242,13 @@ static const char IntegerPropertyType[] = "integer";
 class IntegerProperty : public TemplatedProperty<int64_t, int64_t, IntegerPropertyType>
 {
     using TemplatedProperty::TemplatedProperty;
+    public:
+    bool isValueValid(int64_t value) override {
+        if (isnan(value)) {
+            return false;
+        }
+        return true;
+    }
 };
 
 static const char StringPropertyType[] = "string";
@@ -248,4 +261,11 @@ static const char NumberPropertyType[] = "number";
 class NumberProperty : public TemplatedProperty<double, double, NumberPropertyType>
 {
     using TemplatedProperty::TemplatedProperty;
+    public:
+    bool isValueValid(double value) override {
+        if (isnan(value)) {
+            return false;
+        }
+        return true;
+    }
 };
