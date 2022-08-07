@@ -45,6 +45,7 @@ void Device::webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload,
   case WStype_DISCONNECTED:
     logf(Logs::DETAILED, "[%u] Disconnected\n", num);
     clients[num].setDisconnected();
+    clients[num].setEmpty(true);
     break;
   case WStype_CONNECTED:
   {
@@ -54,33 +55,47 @@ void Device::webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload,
     if (!this->isFreeSpaceForNewClient())
     {
       clients[num].setConnected();
+      clients[num].setEmpty(false);
       this->mainSender->send("{ \"messageType\": \"noSpace\" }", clients[num]);
-      this->webSocket->disconnect(num);
       clients[num].setDisconnected();
+      this->webSocket->disconnect(num);
     }
     else
     {
       clients[num].setId(String(clientsCounter++));
       clients[num].setConnected();
+      clients[num].setEmpty(false);
     }
   }
   break;
   case WStype_TEXT:
   {
+    if (!clients[num].isConnected()) {
+      break;
+    }
     logf(Logs::DETAILED, "[%u] get Text: %s\n", num, payload);
     String message = (char *)payload;
     this->interpretMessage(this->clients[num], this->mainSender, message);
   }
   break;
   case WStype_FRAGMENT_TEXT_START:
+    if (!clients[num].isConnected()) {
+      break;
+    }
     this->fragmentBuffer[num] = (char *)payload;
     logf(Logs::DETAILED, "[%u] get start start of Textfragment: %s\n", num, payload);
     break;
   case WStype_FRAGMENT:
+    if (!clients[num].isConnected()) {
+      break;
+    }
     this->fragmentBuffer[num] += (char *)payload;
     logf(Logs::DETAILED, "[%u] get Textfragment : %s\n", num, payload);
     break;
   case WStype_FRAGMENT_FIN:
+    if (!clients[num].isConnected()) {
+      break;
+    }
     this->fragmentBuffer[num] += (char *)payload;
     logf(Logs::DETAILED, "[%u] get end of Textfragment: %s\n", num, payload);
     logf(Logs::DETAILED, "[%u] full frame: %s\n", num, fragmentBuffer[num].c_str());
@@ -396,15 +411,15 @@ void Device::sendSimpleMessage(Sender *sender, HClient &client, String type)
 
 bool Device::isFreeSpaceForNewClient()
 {
-  int clientsConnected = 0;
+  int spacesForClientTaken = 0;
   for (int i = 0; i < MAX_CLIENTS; i++)
   {
-    if (this->clients[i].isConnected())
+    if (!this->clients[i].isEmpty())
     {
-      clientsConnected++;
+      spacesForClientTaken++;
     }
   }
-  return clientsConnected < (MAX_CLIENTS - 1);
+  return spacesForClientTaken < (MAX_CLIENTS - 1);
 }
 
 void Device::logToDevices(const char *text)
