@@ -13,6 +13,7 @@ public:
         this->logEnabled = false;
         this->authenticated = false;
         this->connected = false;
+        this->empty = true;
     }
 
     void setLogEnabled(bool logEnabled) {
@@ -29,6 +30,14 @@ public:
         this->authenticated = false;
         this->logEnabled = false;
         this->connected = true;
+    }
+
+    void setEmpty(bool empty) {
+        this->empty = empty;
+    }
+
+    bool isEmpty() {
+        return this->empty;
     }
 
     void setDisconnected()
@@ -83,4 +92,5 @@ private:
     bool authenticated;
     unsigned long lastKeepalive;
     bool logEnabled;
+    bool empty;
 };

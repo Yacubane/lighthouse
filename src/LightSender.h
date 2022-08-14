@@ -20,12 +20,18 @@ public:
 
     virtual void send(String text, HClient &client)
     {
-        this->webSocket->sendTXT(client.getSocketId(), text);
+        if(!this->webSocket->sendTXT(client.getSocketId(), text)) {
+            this->webSocket->disconnect(client.getSocketId());
+            client.setDisconnected();
+        }
     }
 
     virtual void send(HClient *client, WSopcode_t opcode, uint8_t * payload, size_t length, bool fin, bool headerToPayload)
     {
-        this->webSocket->sendFrame(client->getSocketId(), opcode, payload, length, fin, headerToPayload);   
+        if(!this->webSocket->sendFrame(client->getSocketId(), opcode, payload, length, fin, headerToPayload)) {
+            this->webSocket->disconnect(client->getSocketId());
+            client->setDisconnected();
+        }
     }
 
     virtual void sendAll(String text)
