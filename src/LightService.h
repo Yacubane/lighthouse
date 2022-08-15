@@ -10,8 +10,6 @@
 #include <WebSocketsServer.h>
 #include "LightDefines.h"
 
-#define MAX_CLIENTS 5
-
 class Device;
 
 struct PropertyNode
@@ -36,7 +34,7 @@ public:
     void addProperty(Property &property);
     void addAction(const char *id, std::vector<const char *> types, const char *description, void (*handler)(ActionStatus *actionStatus, JsonVariant data));
     void createJSONDescription(JsonObject jsonObject);
-    void interpretMessage(HClient &client, Sender *sender, JsonObject &json);
+    void interpretMessage(HClient *client, Sender *sender, JsonObject &json);
 
     void setDevice(Device *device)
     {

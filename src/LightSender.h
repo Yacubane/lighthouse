@@ -5,24 +5,22 @@
 #include "LightClient.h"
 #include "LightDefines.h"
 
-#define MAX_CLIENTS 5
-
 class Sender
 {
 public:
     Sender(){}
 
-    Sender(CustomWebSocketsServer *webSocket, HClient *clients)
+    Sender(CustomWebSocketsServer *webSocket, HClient **clients)
     {
         this->webSocket = webSocket;
         this->clients = clients;
     }
 
-    virtual void send(String text, HClient &client)
+    virtual void send(String text, HClient *client)
     {
-        if(!this->webSocket->sendTXT(client.getSocketId(), text)) {
-            this->webSocket->disconnect(client.getSocketId());
-            client.setDisconnected();
+        if(!this->webSocket->sendTXT(client->getSocketId(), text)) {
+            this->webSocket->disconnect(client->getSocketId());
+            client->setDisconnected();
         }
     }
 
@@ -36,21 +34,21 @@ public:
 
     virtual void sendAll(String text)
     {
-        for (int i = 0; i < MAX_CLIENTS; i++)
+        for (int i = 0; i < LIGHTHOUSE_CLIENT_MAX; i++)
         {
-            if (this->clients[i].isConnected() && this->clients[i].isAuthenticated())
+            if (this->clients[i]->isConnected() && this->clients[i]->isAuthenticated())
             {
                 this->send(text, this->clients[i]);
             }
         }
     }
 
-    virtual HClient *getClients()
+    virtual HClient **getClients()
     {
         return clients;
     }
 
 private:
     CustomWebSocketsServer *webSocket;
-    HClient *clients;
+    HClient **clients;
 };

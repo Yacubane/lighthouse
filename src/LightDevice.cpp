@@ -4,6 +4,11 @@ Device::Device(char const *name, int port)
 {
   this->name = name;
   this->port = port;
+  this->clients = new HClient*[LIGHTHOUSE_CLIENT_MAX];
+  for (int i = 0; i < LIGHTHOUSE_CLIENT_MAX; i++) {
+    this->clients[i] = new HClient(i);
+  }
+
   this->logsMode = Logs::SIMPLE;
   this->clientsCounter = 0;
 
@@ -44,8 +49,8 @@ void Device::webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload,
   {
   case WStype_DISCONNECTED:
     logf(Logs::DETAILED, "[%u] Disconnected\n", num);
-    clients[num].setDisconnected();
-    clients[num].setEmpty(true);
+    clients[num]->setDisconnected();
+    clients[num]->setEmpty(true);
     break;
   case WStype_CONNECTED:
   {
@@ -54,23 +59,23 @@ void Device::webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload,
          ip[1], ip[2], ip[3], payload);
     if (!this->isFreeSpaceForNewClient())
     {
-      clients[num].setConnected();
-      clients[num].setEmpty(false);
+      clients[num]->setConnected();
+      clients[num]->setEmpty(false);
       this->mainSender->send("{ \"messageType\": \"noSpace\" }", clients[num]);
-      clients[num].setDisconnected();
+      clients[num]->setDisconnected();
       this->webSocket->disconnect(num);
     }
     else
     {
-      clients[num].setId(String(clientsCounter++));
-      clients[num].setConnected();
-      clients[num].setEmpty(false);
+      clients[num]->setId(String(clientsCounter++));
+      clients[num]->setConnected();
+      clients[num]->setEmpty(false);
     }
   }
   break;
   case WStype_TEXT:
   {
-    if (!clients[num].isConnected()) {
+    if (!clients[num]->isConnected()) {
       break;
     }
     logf(Logs::DETAILED, "[%u] get Text: %s\n", num, payload);
@@ -79,21 +84,21 @@ void Device::webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload,
   }
   break;
   case WStype_FRAGMENT_TEXT_START:
-    if (!clients[num].isConnected()) {
+    if (!clients[num]->isConnected()) {
       break;
     }
     this->fragmentBuffer[num] = (char *)payload;
     logf(Logs::DETAILED, "[%u] get start start of Textfragment: %s\n", num, payload);
     break;
   case WStype_FRAGMENT:
-    if (!clients[num].isConnected()) {
+    if (!clients[num]->isConnected()) {
       break;
     }
     this->fragmentBuffer[num] += (char *)payload;
     logf(Logs::DETAILED, "[%u] get Textfragment : %s\n", num, payload);
     break;
   case WStype_FRAGMENT_FIN:
-    if (!clients[num].isConnected()) {
+    if (!clients[num]->isConnected()) {
       break;
     }
     this->fragmentBuffer[num] += (char *)payload;
@@ -104,7 +109,7 @@ void Device::webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload,
   }
 }
 
-void Device::interpretMessage(HClient &client, Sender *sender, String message)
+void Device::interpretMessage(HClient *client, Sender *sender, String message)
 {
   String restMessage = message;
   String jsonMessage = "";
@@ -156,7 +161,7 @@ void Device::interpretMessage(HClient &client, Sender *sender, String message)
   }
 }
 
-void Device::interpretMessage(HClient &client, Sender *sender, DynamicJsonDocument &json)
+void Device::interpretMessage(HClient *client, Sender *sender, DynamicJsonDocument &json)
 {
   String messageType = json["messageType"];
 
@@ -174,7 +179,7 @@ void Device::interpretMessage(HClient &client, Sender *sender, DynamicJsonDocume
     String password = data["password"];
     if (password.equals(this->devicePassword))
     {
-      client.setAuthenticated(true);
+      client->setAuthenticated(true);
       sendSimpleMessage(sender, client, "authenticationSuccess");
     }
     else
@@ -184,7 +189,7 @@ void Device::interpretMessage(HClient &client, Sender *sender, DynamicJsonDocume
   }
   else if (messageType.equals("keepalive"))
   {
-    client.keepalive();
+    client->keepalive();
   }
   else if (messageType.equals("ping"))
   {
@@ -192,7 +197,7 @@ void Device::interpretMessage(HClient &client, Sender *sender, DynamicJsonDocume
   }
   else if (messageType.equals("describe"))
   {
-    if (!client.isAuthenticated())
+    if (!client->isAuthenticated())
     {
       sendSimpleMessage(sender, client, "authenticationRequired");
       return;
@@ -215,7 +220,7 @@ void Device::interpretMessage(HClient &client, Sender *sender, DynamicJsonDocume
   }
   else if (messageType.equals("serviceInteraction"))
   {
-    if (!client.isAuthenticated())
+    if (!client->isAuthenticated())
     {
       sendSimpleMessage(sender, client, "authenticationRequired");
       return;
@@ -255,7 +260,7 @@ void Device::interpretMessage(HClient &client, Sender *sender, DynamicJsonDocume
   }
   else if (messageType.equals("setupLogs"))
   {
-    if (!client.isAuthenticated())
+    if (!client->isAuthenticated())
     {
       sendSimpleMessage(sender, client, "authenticationRequired");
       return;
@@ -270,7 +275,7 @@ void Device::interpretMessage(HClient &client, Sender *sender, DynamicJsonDocume
       return;
     }
     bool enabled = data["enabled"];
-    client.setLogEnabled(enabled);
+    client->setLogEnabled(enabled);
   }
 }
 
@@ -401,7 +406,7 @@ void Device::addService(Service *service)
   this->serviceList = newNode;
 }
 
-void Device::sendSimpleMessage(Sender *sender, HClient &client, String type)
+void Device::sendSimpleMessage(Sender *sender, HClient *client, String type)
 {
   DynamicJsonDocument doc = this->prepareMessage(SMALL_MESSAGE_JSON_SIZE, type);
   String output;
@@ -412,22 +417,22 @@ void Device::sendSimpleMessage(Sender *sender, HClient &client, String type)
 bool Device::isFreeSpaceForNewClient()
 {
   int spacesForClientTaken = 0;
-  for (int i = 0; i < MAX_CLIENTS; i++)
+  for (int i = 0; i < LIGHTHOUSE_CLIENT_MAX; i++)
   {
-    if (!this->clients[i].isEmpty())
+    if (!this->clients[i]->isEmpty())
     {
       spacesForClientTaken++;
     }
   }
-  return spacesForClientTaken < (MAX_CLIENTS - 1);
+  return spacesForClientTaken < (LIGHTHOUSE_CLIENT_MAX - 1);
 }
 
 void Device::logToDevices(const char *text)
 {
   bool atLeastOneDeviceHasEnabledLogging = false;
-  for (int i = 0; i < MAX_CLIENTS; i++)
+  for (int i = 0; i < LIGHTHOUSE_CLIENT_MAX; i++)
   {
-    if (this->clients[i].isConnected() && this->clients[i].isLogEnabled())
+    if (this->clients[i]->isConnected() && this->clients[i]->isLogEnabled())
     {
       atLeastOneDeviceHasEnabledLogging = true;
       break;
@@ -442,9 +447,9 @@ void Device::logToDevices(const char *text)
   doc["data"] = text;
   String output;
   serializeJson(doc, output);
-  for (int i = 0; i < MAX_CLIENTS; i++)
+  for (int i = 0; i < LIGHTHOUSE_CLIENT_MAX; i++)
   {
-    if (this->clients[i].isConnected() && this->clients[i].isLogEnabled())
+    if (this->clients[i]->isConnected() && this->clients[i]->isLogEnabled())
     {
       this->mainSender->send(output, this->clients[i]);
     }
@@ -550,7 +555,7 @@ void Device::updateUDP()
       HClient client(-1);
       UdpSender udpSender;
       Sender *tempSender = &udpSender;
-      this->interpretMessage(client, &udpSender, String(buffer));
+      this->interpretMessage(&client, &udpSender, String(buffer));
       delete[] buffer;
     }
   } while (packetSize > 0);
@@ -593,14 +598,14 @@ void Device::update()
     serviceNode = serviceNode->next;
   }
 
-  for (int i = 0; i < MAX_CLIENTS; i++)
+  for (int i = 0; i < LIGHTHOUSE_CLIENT_MAX; i++)
   {
-    if (this->clients[i].isConnected())
+    if (this->clients[i]->isConnected())
     {
-      if (this->clients[i].isKeepaliveTimeout())
+      if (this->clients[i]->isKeepaliveTimeout())
       {
         sendSimpleMessage(this->mainSender, this->clients[i], "keepaliveTimeout");
-        this->webSocket->disconnect(this->clients[i].getSocketId());
+        this->webSocket->disconnect(this->clients[i]->getSocketId());
       }
     }
   }
