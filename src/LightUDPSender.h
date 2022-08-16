@@ -11,7 +11,7 @@ class UdpSender : public Sender
 public:
     UdpSender() : Sender(){}
 
-    void send(String text, HClient &client) override {
+    void send(String text, HClient *client) override {
         // fake interface used when interpreting UDP messages - no message will be send to other devices when using this type of communication
     }
 
@@ -19,7 +19,7 @@ public:
         // fake interface used when interpreting UDP messages - no message will be send to other devices when using this type of communication
     }
 
-    HClient *getClients()
+    HClient **getClients()
     {
         return nullptr;
     }

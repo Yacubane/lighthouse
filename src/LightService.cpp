@@ -71,7 +71,7 @@ DynamicJsonDocument Service::prepareMessage(int capacity, String type)
     return doc;
 }
 
-void Service::interpretMessage(HClient &client, Sender *sender, JsonObject &json)
+void Service::interpretMessage(HClient *client, Sender *sender, JsonObject &json)
 {
     String messageType = json["messageType"];
 
@@ -255,12 +255,12 @@ void Service::update(Sender *sender)
         {
             String actionStatusClientId = actionStatusNode->actionStatus->getClientId();
             HClient *client = nullptr;
-            HClient *clients = sender->getClients();
-            for (int i = 0; i < MAX_CLIENTS; i++)
+            HClient **clients = sender->getClients();
+            for (int i = 0; i < LIGHTHOUSE_CLIENT_MAX; i++)
             {
-                if (clients[i].isConnected() && clients[i].getId().equals(actionStatusClientId))
+                if (clients[i]->isConnected() && clients[i]->getId().equals(actionStatusClientId))
                 {
-                    client = &clients[i];
+                    client = clients[i];
                     break;
                 }
             }
@@ -277,7 +277,7 @@ void Service::update(Sender *sender)
                 data["userMessage"] = actionStatusNode->actionStatus->getUserMessage();
                 String output;
                 serializeJson(doc, output);
-                sender->send(output, *client);
+                sender->send(output, client);
             }
 
             if (actionStatusNode->actionStatus->getStatus() != ActionStatus::PENDING)

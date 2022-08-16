@@ -14,9 +14,6 @@
 #include "CustomWebSocketsServer.h"
 #include "LightDefines.h"
 
-#define MAX_CLIENTS 5
-#define WIFI_CONNECTING_MAX_TIME 20000 // 20000ms = 20s
-
 class Service;
 
 struct ServiceNode
@@ -70,7 +67,7 @@ public:
     {
         return this->mainSender;
     }
-    HClient *getClients()
+    HClient **getClients()
     {
         return clients;
     }
@@ -82,8 +79,8 @@ private:
     unsigned long clientsCounter;
     ServiceNode *serviceList;
     CustomWebSocketsServer *webSocket;
-    HClient clients[5] = {{0}, {1}, {2}, {3}, {4}};
-    String fragmentBuffer[5];
+    HClient **clients;
+    String fragmentBuffer[LIGHTHOUSE_CLIENT_MAX];
     String devicePassword = "";
     Sender *mainSender;
     WiFiUDP *udp;
@@ -98,7 +95,7 @@ private:
     int wifiStatusConnectingPulseTime;
     void (*wifiStatusNotifier)(WiFiStatus status);
 
-    void sendSimpleMessage(Sender *sender, HClient &client, String type);
+    void sendSimpleMessage(Sender *sender, HClient *client, String type);
     bool isFreeSpaceForNewClient();
     bool isMessageProper(DynamicJsonDocument &json);
     Action *findActionWithName(String name);
@@ -108,8 +105,8 @@ private:
     void ensureHasWifi();
     void setupUDP();
     void updateUDP();
-    void interpretMessage(HClient &client, Sender *sender, String message);
-    void interpretMessage(HClient &client, Sender *sender, DynamicJsonDocument &json);
+    void interpretMessage(HClient *client, Sender *sender, String message);
+    void interpretMessage(HClient *client, Sender *sender, DynamicJsonDocument &json);
     void logToDevices(const char *text);
     bool shouldLog(Logs logMode);
 };

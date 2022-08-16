@@ -53,9 +53,9 @@ public:
         return true;
     }
 
-    ActionStatus *invokeAction(HClient &client, Sender* sender, const char *requestId, JsonVariant data)
+    ActionStatus *invokeAction(HClient *client, Sender* sender, const char *requestId, JsonVariant data)
     {
-        ActionStatus *actionStatus = new ActionStatus(String(counter++), getId(), requestId, &client, sender, ActionStatus::PENDING, "PENDING", "Starting action");
+        ActionStatus *actionStatus = new ActionStatus(String(counter++), getId(), requestId, client, sender, ActionStatus::PENDING, "PENDING", "Starting action");
         actionStatus->setChanged(true);
         ActionStatusNode *newNode = new ActionStatusNode();
         newNode->actionStatus = actionStatus;

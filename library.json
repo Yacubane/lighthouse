@@ -17,7 +17,7 @@
     "license": "Unknown",
     "dependencies": {
         "ArduinoJson": "https://github.com/bblanchon/ArduinoJson.git#v6.15.2",
-        "WebSockets": "https://github.com/Links2004/arduinoWebSockets.git#2.3.6"
+        "WebSockets": "https://github.com/jakubdybczak/arduinoWebSockets#set-timeout"
     },
     "export": {
         "exclude": [
