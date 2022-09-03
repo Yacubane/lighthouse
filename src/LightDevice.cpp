@@ -587,10 +587,8 @@ void Device::update()
     this->updateUDP();
   }
 
-  for (int i = 0; i < 100; i++)
-  {
-    this->webSocket->loop();
-  }
+  this->webSocket->loop();
+
   ServiceNode *serviceNode = this->serviceList;
   while (serviceNode->next != nullptr)
   {
