@@ -111,53 +111,47 @@ void Device::webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload,
 
 void Device::interpretMessage(HClient *client, Sender *sender, String message)
 {
-  String restMessage = message;
-  String jsonMessage = "";
-
-  while (restMessage.length() > 0)
+  bool foundMessage = false;
+  int startedJsonObjects = 0;
+  int jsonObjectStart = 0;
+  for (int i = 0; i < message.length(); i++)
   {
-    bool foundMessage = false;
-    int jsonObjectsNum = 0;
-    for (int i = 0; i < restMessage.length(); i++)
+    if (message[i] == '{')
     {
-      if (restMessage[i] == '{')
-      {
-        jsonObjectsNum++;
+      if (startedJsonObjects == 0) {
+        jsonObjectStart = i;
       }
-      else if (restMessage[i] == '}')
+      startedJsonObjects++;
+    }
+    else if (message[i] == '}')
+    {
+      startedJsonObjects--;
+      if (startedJsonObjects == 0)
       {
-        jsonObjectsNum--;
-        if (jsonObjectsNum == 0)
+        String jsonMessage = message.substring(jsonObjectStart, i + 1);
+        logf(Logs::DETAILED, "Parsing JSON: %s\n", jsonMessage.c_str());
+
+        DynamicJsonDocument doc(INCOMING_JSON_CAPACITY);
+        DeserializationError deserializationError =
+            deserializeJson(doc, jsonMessage);
+        if (deserializationError.code() == deserializationError.Ok)
         {
-          jsonMessage = restMessage.substring(0, i + 1);
-          restMessage = restMessage.substring(i + 1);
-
-          logf(Logs::DETAILED, "Parsing JSON: %s\n", jsonMessage.c_str());
-
-          DynamicJsonDocument doc(INCOMING_JSON_CAPACITY);
-          DeserializationError deserializationError =
-              deserializeJson(doc, jsonMessage);
-          if (deserializationError.code() == deserializationError.Ok)
-          {
-            this->interpretMessage(client, sender, doc);
-            foundMessage = true;
-          }
-          else
-          {
-            logf(Logs::DETAILED, "Error parsing JSON: %s\n",
-                 deserializationError.c_str());
-          }
-
-          break;
+          this->interpretMessage(client, sender, doc);
+          foundMessage = true;
+        }
+        else
+        {
+          logf(Logs::DETAILED, "Error parsing JSON: %s\n",
+                deserializationError.c_str());
         }
       }
     }
-    // could not find json message :(
-    if (!foundMessage)
-    {
-      logf(Logs::DETAILED, "Could not find JSON message!");
-      return;
-    }
+  }
+  // could not find json message :(
+  if (!foundMessage)
+  {
+    logf(Logs::DETAILED, "Could not find any JSON message!");
+    return;
   }
 }
 
@@ -258,7 +252,7 @@ void Device::interpretMessage(HClient *client, Sender *sender, DynamicJsonDocume
       }
     }
   }
-  else if (messageType.equals("setupLogs"))
+  else if (messageType.equals("configureClientLogs"))
   {
     if (!client->isAuthenticated())
     {
@@ -276,6 +270,35 @@ void Device::interpretMessage(HClient *client, Sender *sender, DynamicJsonDocume
     }
     bool enabled = data["enabled"];
     client->setLogEnabled(enabled);
+  }
+  else if (messageType.equals("configureDeviceLogs"))
+  {
+    if (!client->isAuthenticated())
+    {
+      sendSimpleMessage(sender, client, "authenticationRequired");
+      return;
+    }
+    if (!json.containsKey("data"))
+    {
+      return;
+    }
+    JsonObject data = json["data"];
+    if (!data.containsKey("type"))
+    {
+      return;
+    }
+
+    String type = data["type"];
+    if (type.equals("NONE")) 
+    {
+      this->setLogsMode(Device::Logs::NONE); 
+    } else if (type.equals("SIMPLE")) 
+    {
+      this->setLogsMode(Device::Logs::SIMPLE); 
+    } else if (type.equals("DETAILED")) 
+    {
+      this->setLogsMode(Device::Logs::DETAILED); 
+    }
   }
 }
 
