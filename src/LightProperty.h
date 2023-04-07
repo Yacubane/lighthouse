@@ -8,7 +8,15 @@
 class Property
 {
 public:
-    Property(const char *id, std::vector<const char *> semanticTypes, const char *description, bool readOnly = true, bool informOnChange = true)
+    enum SendingUpdatesStrategy
+    {
+        NEVER, // never update
+        MANUAL, // update only manually
+        OPTIMIZE, // with maximum period + on change
+        ON_CHANGE, // update on change
+        ALWAYS, // always update
+    };
+    Property(const char *id, std::vector<const char *> semanticTypes = {}, const char *description = "", bool readOnly = true)
     {
         this->id = id;
         this->changed = false;
@@ -20,22 +28,16 @@ public:
         this->onPropertySetHandler = nullptr;
         this->setError("NoValue", "There is no value");
         this->readOnly = readOnly;
-        this->informOnChange = informOnChange;
+    }
+
+    void setReadOnly(bool readOnly) 
+    {
+        this->readOnly = readOnly;
     }
 
     bool isReadOnly()
     {
         return this->readOnly;
-    }
-
-    bool isInformOnChange()
-    {
-        return this->informOnChange;
-    }
-
-    void setInformOnChange(bool informOnChange)
-    {
-        this->informOnChange = informOnChange;
     }
 
     bool isChanged()
@@ -134,6 +136,50 @@ public:
         return this->lastTimeSetMillis;
     }
 
+    void setLastTimeSentUpdateMillis(unsigned long millis)
+    {
+        this->lastTimeSentUpdateMillis = millis;
+    }
+
+    unsigned long getLastTimeSentUpdateMillis()
+    {
+        return this->lastTimeSentUpdateMillis;
+    }
+
+    void setMinPeriodForSendingUpdates(unsigned long millis)
+    {
+        this->minPeriodForSendingUpdates = millis;
+    }
+
+    bool shouldSendUpdate() {
+        switch (sendingUpdatesStrategy) {
+            case SendingUpdatesStrategy::NEVER:
+                return false;
+            case SendingUpdatesStrategy::MANUAL:
+                return this->shouldUpdatesBeSent;
+            case SendingUpdatesStrategy::OPTIMIZE:
+                return this->isChanged() && (millis() - this->lastTimeSentUpdateMillis > minPeriodForSendingUpdates);
+            case SendingUpdatesStrategy::ON_CHANGE:
+                return this->isChanged();
+            case SendingUpdatesStrategy::ALWAYS:
+                return true;;
+        }
+    }
+
+    void afterSendingUpdates() {
+        this->setChanged(false);
+        this->shouldUpdatesBeSent = false;
+        this->lastTimeSentUpdateMillis = millis();
+    }
+
+    void setSendingUpdatesStrategy(enum SendingUpdatesStrategy sendingUpdatesStrategy) {
+        this->sendingUpdatesStrategy = sendingUpdatesStrategy;
+    }
+
+    void setSendUpdateFlag() {
+        this->shouldUpdatesBeSent = true;
+    }
+
     virtual String getType() = 0;
     virtual void addToJson(JsonObject jsonObject) = 0;
     virtual bool setValue(JsonVariant jsonVariant) = 0;
@@ -145,13 +191,16 @@ protected:
 
 private:
     unsigned long lastTimeSetMillis = 0;
+    unsigned long lastTimeSentUpdateMillis = 0;
+    unsigned long minPeriodForSendingUpdates = LIGHTHOUSE_DEFAULT_MIN_PROPERTY_UPDATES_PERIOD_MS;
     const char *id;
     const char *description;
     bool changed;
+    enum SendingUpdatesStrategy sendingUpdatesStrategy = SendingUpdatesStrategy::OPTIMIZE;
     std::vector<const char *> semanticTypes;
     void (*onPropertySetHandler)();
     bool readOnly;
-    bool informOnChange;
+    bool shouldUpdatesBeSent = false;
 };
 
 template <typename U, typename V, char const *type>

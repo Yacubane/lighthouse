@@ -43,6 +43,19 @@ public:
         }
     }
 
+    virtual void sendToAllPropertySubscribers(String text, bool debugSubscribersOnly)
+    {
+        for (int i = 0; i < LIGHTHOUSE_CLIENT_MAX; i++)
+        {
+            if (this->clients[i]->isConnected() && this->clients[i]->isAuthenticated() &&
+                 this->clients[i]->isSubscribedToAllProperties() && 
+                 (!debugSubscribersOnly || this->clients[i]->isSubscribedToAllDebugProperties()))
+            {
+                this->send(text, this->clients[i]);
+            }
+        }
+    }
+
     virtual HClient **getClients()
     {
         return clients;

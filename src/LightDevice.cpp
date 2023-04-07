@@ -300,6 +300,50 @@ void Device::interpretMessage(HClient *client, Sender *sender, DynamicJsonDocume
       this->setLogsMode(Device::Logs::DETAILED); 
     }
   }
+  else if (messageType.equals("readAllProperties"))
+  {
+    if (!client->isAuthenticated())
+    {
+      sendSimpleMessage(sender, client, "authenticationRequired");
+      return;
+    }
+    bool debug = false;
+    if (json.containsKey("data"))
+    {
+      JsonObject data = json["data"];
+      if (data.containsKey("debug"))
+      {
+        debug = data["debug"];
+      }
+    }
+    ServiceNode *serviceNode = this->serviceList;
+    while (serviceNode->next != nullptr)
+    {
+      if (!serviceNode->service->isDebug() || debug) {
+        serviceNode->service->readAllProperties(client, sender);
+      }
+      serviceNode = serviceNode->next;
+    }
+  }
+  else if (messageType.equals("subscribeAllProperties"))
+  {
+    if (!client->isAuthenticated())
+    {
+      sendSimpleMessage(sender, client, "authenticationRequired");
+      return;
+    }
+    bool debug = false;
+    if (json.containsKey("data"))
+    {
+      JsonObject data = json["data"];
+      if (data.containsKey("debug"))
+      {
+        debug = data["debug"];
+      }
+    }
+    client->setSubscribedToAllProperties(true);
+    client->setSubscribedToAllDebugProperties(debug);
+  }
 }
 
 void Device::ensureHasWifi()
