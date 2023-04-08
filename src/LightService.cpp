@@ -161,19 +161,23 @@ void Service::interpretMessage(HClient *client, Sender *sender, JsonObject &json
     }
     else if (messageType.equals("readAllProperties"))
     {
-        PropertyNode *propertyNode = this->propertyList;
-        while (propertyNode->next != nullptr)
+        this->readAllProperties(client, sender);
+    }
+}
+
+void Service::readAllProperties(HClient *client, Sender *sender) {
+    PropertyNode *propertyNode = this->propertyList;
+    while (propertyNode->next != nullptr)
+    {
         {
-            {
-                DynamicJsonDocument doc = this->prepareMessage(PROPERTY_STATUS_JSON_SIZE, "propertyStatus");
-                JsonObject data = doc["data"]["data"].createNestedObject("data");
-                propertyNode->property->addToJson(data);
-                String output;
-                serializeJson(doc, output);
-                sender->send(output, client);
-            }
-            propertyNode = propertyNode->next;
+            DynamicJsonDocument doc = this->prepareMessage(PROPERTY_STATUS_JSON_SIZE, "propertyStatus");
+            JsonObject data = doc["data"]["data"].createNestedObject("data");
+            propertyNode->property->addToJson(data);
+            String output;
+            serializeJson(doc, output);
+            sender->send(output, client);
         }
+        propertyNode = propertyNode->next;
     }
 }
 
@@ -233,15 +237,15 @@ void Service::update(Sender *sender)
     PropertyNode *propertyNode = this->propertyList;
     while (propertyNode->next != nullptr)
     {
-        if (propertyNode->property->isChanged() && propertyNode->property->isInformOnChange())
+        if (propertyNode->property->shouldSendUpdate())
         {
-            propertyNode->property->setChanged(false);
             DynamicJsonDocument doc = this->prepareMessage(PROPERTY_STATUS_JSON_SIZE, "propertyStatus");
             JsonObject data = doc["data"]["data"].createNestedObject("data");
             propertyNode->property->addToJson(data);
             String output;
             serializeJson(doc, output);
-            sender->sendAll(output);
+            sender->sendToAllPropertySubscribers(output, this->isDebug());
+            propertyNode->property->afterSendingUpdates();
         }
         propertyNode = propertyNode->next;
     }

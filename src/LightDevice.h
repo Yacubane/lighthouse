@@ -43,7 +43,7 @@ public:
     void setWiFi(char const *ssid, char const *password);
     void setOTA(const char *password);
     void setUDPSupport(int port);
-    void setWifiStatusNotifier(void (*wifiStatusHandler)(WiFiStatus status), int connectingPulseTime);
+    void setWifiStatusNotifier(void (*wifiStatusHandler)(WiFiStatus status), int connectingPulseTime = 200);
     void update();
     void start();
     void sendUdpPacket(const char *ip, int port, const char *message);

@@ -19,6 +19,10 @@ public:
         // fake interface used when interpreting UDP messages - no message will be send to other devices when using this type of communication
     }
 
+    void sendToAllPropertySubscribers(String text, bool debugSubscribersOnly) override {
+        // fake interface used when interpreting UDP messages - no message will be send to other devices when using this type of communication
+    }
+
     HClient **getClients()
     {
         return nullptr;

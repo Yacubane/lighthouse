@@ -30,6 +30,8 @@ public:
         this->authenticated = false;
         this->logEnabled = false;
         this->connected = true;
+        this->subscribedToAllProperties = LIGHTHOUSE_NEW_CLIENT_AUTOMATICALLY_SUBSCRIBED_TO_ALL_PROPERTIES;
+        this->subscribedToAllDebugProperties = false;
     }
 
     void setEmpty(bool empty) {
@@ -82,7 +84,23 @@ public:
 
     bool isKeepaliveTimeout()
     {
-        return millis() - lastKeepalive > 15000;
+        return millis() - lastKeepalive > LIGHTHOUSE_CLIENT_KEEPALIVE_TIMEOUT;
+    }
+
+    void setSubscribedToAllProperties(bool subscribedToAllProperties) {
+        this->subscribedToAllProperties = subscribedToAllProperties;
+    }
+
+    void setSubscribedToAllDebugProperties(bool subscribedToAllDebugProperties) {
+        this->subscribedToAllDebugProperties = subscribedToAllDebugProperties;
+    }
+
+    bool isSubscribedToAllProperties() {
+        return subscribedToAllProperties;
+    }
+
+    bool isSubscribedToAllDebugProperties() {
+        return subscribedToAllDebugProperties;
     }
 
 private:
@@ -93,4 +111,6 @@ private:
     unsigned long lastKeepalive;
     bool logEnabled;
     bool empty;
+    bool subscribedToAllProperties;
+    bool subscribedToAllDebugProperties;
 };
