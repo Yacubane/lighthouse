@@ -18,6 +18,7 @@ public:
 
     virtual void send(String text, HClient *client)
     {
+    delay(20);
         if(!this->webSocket->sendTXT(client->getSocketId(), text)) {
             this->webSocket->disconnect(client->getSocketId());
             client->setDisconnected();
