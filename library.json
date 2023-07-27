@@ -16,7 +16,7 @@
     "version": "1.2.1",
     "license": "Unknown",
     "dependencies": {
-        "ArduinoJson": "https://github.com/bblanchon/ArduinoJson.git#v6.21.1",
+        "ArduinoJson": "https://github.com/bblanchon/ArduinoJson.git#v6.21.3",
         "WebSockets": "https://github.com/Links2004/arduinoWebSockets#2.4.0"
     },
     "export": {
