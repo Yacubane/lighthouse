@@ -13,7 +13,7 @@
         "type": "git",
         "url": "https://github.com/jakubdybczak/lighthouse.git"
     },
-    "version": "1.2.1",
+    "version": "1.2.3",
     "license": "Unknown",
     "dependencies": {
         "ArduinoJson": "https://github.com/bblanchon/ArduinoJson.git#v6.21.3",
